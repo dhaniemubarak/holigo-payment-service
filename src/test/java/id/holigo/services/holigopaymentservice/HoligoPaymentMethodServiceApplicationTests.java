@@ -1,10 +1,10 @@
-package id.holigo.services.holigopaymentmethodservice;
+package id.holigo.services.holigopaymentservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class HoligoPaymentMethodServiceApplicationTests {
+class HoligoPaymentServiceApplicationTests {
 
 	@Test
 	void contextLoads() {
