@@ -14,7 +14,30 @@ INSERT INTO languages (id, locale, message_key,message_content, created_at, upda
 (13, 'id', 'payment_service.BT_BRI','Transfer Bank BRI', now(), now()),
 (14, 'id', 'payment_service.VA_BCA','Virtual Account BCA', now(), now()),
 (15, 'id', 'payment_service.VA_MANDIRI','Virtual Account Mandiri', now(), now()),
-(16, 'id', 'payment_service.VA_BNI','Vitual Account BNI', now(), now());
+(16, 'id', 'payment_service.VA_BNI','Vitual Account BNI', now(), now()),
+(17, 'id', 'holigo-transaction-service.not_found','Transaksi tidak ditemukan', now(), now()),
+(18, 'en', 'holigo-transaction-service.not_found','Transaction not found.', now(), now()),
+(19, 'id', 'payment.user_transaction_not_match','Transaksi Anda tidak valid.', now(), now()),
+(20, 'en', 'payment.user_transaction_not_match','Your transaction not valid.', now(), now()),
+(21, 'id', 'payment.waiting_payment','Transaksi sedang menunggu pembayaran.', now(), now()),
+(22, 'en', 'payment.waiting_payment','Transaction is waiting for payment. .', now(), now()),
+(23, 'id', 'payment.verifying_payment','Pembayaran sedang diverifikasi..', now(), now()),
+(24, 'en', 'payment.verifying_payment','Payment is verifying process.', now(), now()),
+(25, 'id', 'payment.payment_failed','Pembayaran gagal.', now(), now()),
+(26, 'en', 'payment.payment_failed','Payment is failed.', now(), now()),
+(27, 'id', 'payment.paid','Transaksi sudah dibayar.', now(), now()),
+(28, 'en', 'payment.paid','Transaction already paid.', now(), now()),
+(29, 'id', 'payment.payment_canceled','Transaksi telah dibatalkan.', now(), now()),
+(30, 'en', 'payment.payment_canceled','Transaction has been canceled.', now(), now()),
+(31, 'id', 'payment.payment_expired','Transaksi telah kadaluarsa', now(), now()),
+(32, 'en', 'payment.payment_expired','Transaction has been expired.', now(), now()),
+(33, 'id', 'payment.process_refund','Dana sedang diproses untuk dikembalikan.', now(), now()),
+(34, 'en', 'payment.process_refund','Payment is being processed for refund.', now(), now()),
+(35, 'id', 'payment.waiting_refund','Dana sedang dalam proses pengembalian.', now(), now()),
+(36, 'en', 'payment.waiting_refund','Payment is in the process for refunded.', now(), now()),
+(37, 'id', 'payment.refunded','Dana telah dikembalikan.', now(), now()),
+(38, 'en', 'payment.refunded','Payment has been refunded.', now(), now());
+
 
 INSERT INTO PAYMENT_METHOD (ID,CREATED_AT,INDEX_NAME,IS_SHOW, STATUS,UPDATED_AT) VALUES ('10', now(), 'payment_method.bank_transfer', 1,1, now());
 INSERT INTO PAYMENT_METHOD (ID,CREATED_AT,INDEX_NAME,IS_SHOW, STATUS,UPDATED_AT) VALUES ('11', now(), 'payment_method.virtual_account', 1,1, now());
