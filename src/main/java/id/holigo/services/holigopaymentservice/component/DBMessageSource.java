@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 
 import id.holigo.services.holigopaymentservice.domain.Language;
 import id.holigo.services.holigopaymentservice.repositories.LanguageRepository;
+// import lombok.RequiredArgsConstructor;
 
+// @RequiredArgsConstructor
 @Component("messageSource")
 public class DBMessageSource extends AbstractMessageSource {
 
