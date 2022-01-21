@@ -5,7 +5,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 
-import id.holigo.services.common.model.StatusPaymentEnum;
+import id.holigo.services.common.model.PaymentStatusEnum;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -18,7 +18,7 @@ public class StatusPaymentServiceImpl implements StatusPaymentService {
     private final MessageSource messageSource;
 
     @Override
-    public String getStatusMessage(StatusPaymentEnum statusPaymentEnum) {
+    public String getStatusMessage(PaymentStatusEnum statusPaymentEnum) {
         String message = null;
         switch (statusPaymentEnum.toString()) {
             case "WAITING_PAYMENT":

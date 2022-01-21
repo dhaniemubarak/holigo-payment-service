@@ -15,6 +15,7 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.core.MessageCreator;
 import org.springframework.stereotype.Service;
 
+import id.holigo.services.common.events.TransactionEvent;
 import id.holigo.services.common.model.TransactionDto;
 import id.holigo.services.holigopaymentservice.config.JmsConfig;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,13 @@ public class TransactionServiceImpl implements TransactionService {
         TransactionDto result = objectMapper.readValue(received.getBody(String.class), TransactionDto.class);
         log.info("Result -> {}", result);
         return result;
+    }
+
+    @Override
+    public void issuedTransaction(UUID id) {
+        log.info("issuedTransaction is running with transaction id : " + id.toString());
+        TransactionDto transactionDto = TransactionDto.builder().id(id).build();
+        jmsTemplate.convertAndSend(JmsConfig.ISSUED_TRANSACTION_BY_ID, new TransactionEvent(transactionDto));
     }
 
 }

@@ -4,7 +4,7 @@ import org.springframework.statemachine.StateMachine;
 
 import id.holigo.services.holigopaymentservice.domain.BankTransferCallback;
 import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEnum;
-import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEvent;
+import id.holigo.services.holigopaymentservice.events.BankTransferStatusEvent;
 
 public interface BankTransferCallbackService {
 

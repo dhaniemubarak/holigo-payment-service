@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Transient;
@@ -15,7 +17,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import id.holigo.services.common.model.StatusPaymentEnum;
+import id.holigo.services.common.model.PaymentStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -43,6 +45,7 @@ public class Payment {
 
     private Long userId;
 
+    @Column(columnDefinition = "varchar(10)", nullable = false)
     private String paymentServiceId;
 
     @Column(precision = 10, scale = 2, nullable = false)
@@ -68,7 +71,8 @@ public class Payment {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal remainingAmount;
 
-    private StatusPaymentEnum status;
+    @Enumerated(EnumType.STRING)
+    private PaymentStatusEnum status;
 
     @Column(nullable = true)
     private String verifyType;

@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.jms.JMSException;
+import javax.transaction.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -12,12 +13,18 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.config.StateMachineFactory;
+import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
 
-import id.holigo.services.common.model.StatusPaymentEnum;
+import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.common.model.TransactionDto;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
+import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.PaymentBankTransferRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
 import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
@@ -32,6 +39,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final Integer min = 1;
 
     private final Integer max = 999;
+
+    public static final String PAYMENT_HEADER = "payment_id";
 
     @Autowired
     private final TransactionService transactionService;
@@ -48,6 +57,10 @@ public class PaymentServiceImpl implements PaymentService {
     @Autowired
     private final PaymentBankTransferRepository paymentBankTransferRepository;
 
+    private final StateMachineFactory<PaymentStatusEnum, PaymentStatusEvent> stateMachineFactory;
+
+    private final PaymentInterceptor paymentInterceptor;
+
     @Override
     public Payment createPayment(Payment payment) throws JsonMappingException, JsonProcessingException, JMSException {
 
@@ -63,7 +76,7 @@ public class PaymentServiceImpl implements PaymentService {
                     LocaleContextHolder.getLocale()));
         }
 
-        if (transactionDto.getStatusPayment() != StatusPaymentEnum.WAITING_PAYMENT) {
+        if (transactionDto.getStatusPayment() != PaymentStatusEnum.WAITING_PAYMENT) {
             String message = statusPaymentService.getStatusMessage(transactionDto.getStatusPayment());
             throw new ForbiddenException(messageSource.getMessage(message, null,
                     LocaleContextHolder.getLocale()));
@@ -95,6 +108,7 @@ public class PaymentServiceImpl implements PaymentService {
                 paymentServiceAmount = totalAmount
                         .add(paymentServiceAmount.add(serviceFeeAmount).subtract(pointAmount));
                 PaymentBankTransfer paymentBankTransfer = new PaymentBankTransfer();
+                paymentBankTransfer.setPaymentServiceId(payment.getPaymentServiceId());
                 paymentBankTransfer.setTotalAmount(totalAmount);
                 paymentBankTransfer.setUniqueCode(uniqueCode);
                 paymentBankTransfer.setFdsAmount(BigDecimal.valueOf(0));
@@ -127,7 +141,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setTotalAmount(totalAmount);
         payment.setPaymentServiceAmount(paymentServiceAmount);
         payment.setRemainingAmount(remainingAmount);
-        payment.setStatus(StatusPaymentEnum.WAITING_PAYMENT);
+        payment.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
         payment.setDetailType(detailType);
         payment.setDetailId(detailId);
 
@@ -139,6 +153,37 @@ public class PaymentServiceImpl implements PaymentService {
 
     private Integer randomNumber() {
         return ThreadLocalRandom.current().nextInt(min, max + 1);
+    }
+
+    @Transactional
+    @Override
+    public StateMachine<PaymentStatusEnum, PaymentStatusEvent> paymentHasBeenPaid(UUID id) {
+        StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(id);
+        sendEvent(id, sm, PaymentStatusEvent.PAYMENT_PAID);
+        return sm;
+    }
+
+    private void sendEvent(UUID id,
+            StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm, PaymentStatusEvent event) {
+        Message<PaymentStatusEvent> message = MessageBuilder.withPayload(event)
+                .setHeader(PAYMENT_HEADER, id).build();
+        sm.sendEvent(message);
+    }
+
+    private StateMachine<PaymentStatusEnum, PaymentStatusEvent> build(UUID id) {
+        Payment payment = paymentRepository.getById(id);
+
+        StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = stateMachineFactory
+                .getStateMachine(payment.getId().toString());
+
+        sm.stop();
+        sm.getStateMachineAccessor().doWithAllRegions(sma -> {
+            sma.addStateMachineInterceptor(paymentInterceptor);
+            sma.resetStateMachine(new DefaultStateMachineContext<PaymentStatusEnum, PaymentStatusEvent>(
+                    payment.getStatus(), null, null, null));
+        });
+        sm.start();
+        return sm;
     }
 
 }

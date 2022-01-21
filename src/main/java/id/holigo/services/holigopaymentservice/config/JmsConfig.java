@@ -10,6 +10,8 @@ import org.springframework.jms.support.converter.MessageType;
 public class JmsConfig {
     public static final String GET_TRANSACTION_BY_ID = "get-transaction-by-id";
 
+    public static final String ISSUED_TRANSACTION_BY_ID = "issued-transaction-by-id";
+
     @Bean
     public MessageConverter jacksonJmsMessageConverter() {
         MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();

@@ -15,11 +15,11 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
 
-import id.holigo.services.common.model.StatusPaymentEnum;
+import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.holigopaymentservice.domain.BankTransferCallback;
 import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEnum;
-import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEvent;
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
+import id.holigo.services.holigopaymentservice.events.BankTransferStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.BankTransferCallbackRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentBankTransferRepository;
 import id.holigo.services.holigopaymentservice.services.BankTransferCallbackServiceImpl;
@@ -115,9 +115,9 @@ public class BankTranasferCallbackSMConfig
                                         .findByPaymentServiceIdAndBillAmountAndStatus(
                                                         bankTransferCallback.getPaymentMerchant(),
                                                         bankTransferCallback.getAmount(),
-                                                        StatusPaymentEnum.WAITING_PAYMENT);
+                                                        PaymentStatusEnum.WAITING_PAYMENT);
                         if (fetchPaymentBankTransfer.isPresent()) {
-                                log.info("Transaction found");
+                                log.info("Payment found");
                                 context.getStateMachine()
                                                 .sendEvent(MessageBuilder
                                                                 .withPayload(BankTransferStatusEvent.PROCESS_ISSUED)
@@ -128,10 +128,10 @@ public class BankTranasferCallbackSMConfig
                                 paymentBankTransfer.setCallbackId(bankTransferCallback.getId());
                                 paymentBankTransferRepository.save(paymentBankTransfer);
 
-                                paymentBankTransferService.processIssuedTransaction(paymentBankTransfer.getId());
-                                // Trigger for change status to PAID
+                                paymentBankTransferService.paymentHasBeenPaid(paymentBankTransfer.getId());
+
                         } else {
-                                log.info("Transaction not found");
+                                log.info("Payment not found");
                                 context.getStateMachine()
                                                 .sendEvent(MessageBuilder.withPayload(
                                                                 BankTransferStatusEvent.TRANSACTION_NOT_FOUND)

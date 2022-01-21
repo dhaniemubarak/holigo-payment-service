@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import id.holigo.services.holigopaymentservice.domain.BankTransferCallback;
 import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEnum;
-import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEvent;
+import id.holigo.services.holigopaymentservice.events.BankTransferStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.BankTransferCallbackRepository;
 import lombok.RequiredArgsConstructor;
 

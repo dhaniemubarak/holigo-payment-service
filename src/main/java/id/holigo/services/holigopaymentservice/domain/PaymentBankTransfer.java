@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
@@ -14,6 +16,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import id.holigo.services.common.model.PaymentStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,6 +38,9 @@ public class PaymentBankTransfer {
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID id;
 
+    @Column(columnDefinition = "varchar(10)", nullable = false)
+    private String paymentServiceId;
+
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal totalAmount;
 
@@ -53,6 +59,9 @@ public class PaymentBankTransfer {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal billAmount;
 
+    @Enumerated(EnumType.STRING)
+    private PaymentStatusEnum status;
+
     private String reference;
 
     @CreationTimestamp
@@ -64,5 +73,8 @@ public class PaymentBankTransfer {
 
     @Column(nullable = true)
     private Timestamp deletedAt;
+
+    @Column(nullable = true)
+    private Long callbackId;
 
 }

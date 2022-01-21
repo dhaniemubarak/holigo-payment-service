@@ -55,7 +55,7 @@ public class TransactionDto {
 
     private UUID paymentId;
 
-    private StatusPaymentEnum statusPayment;
+    private PaymentStatusEnum statusPayment;
 
     private StatusOrderEnum statusOrder;
 }

@@ -1,6 +1,6 @@
 package id.holigo.services.common.model;
 
-public enum StatusPaymentEnum {
+public enum PaymentStatusEnum {
     WAITING_PAYMENT, VERIFYING_PAYMENT, PAYMENT_FAILED, PAID, PAYMENT_CANCELED, PAYMENT_EXPIRED, PROCESS_REFUND,
     WAITING_REFUND, REFUNDED
 }

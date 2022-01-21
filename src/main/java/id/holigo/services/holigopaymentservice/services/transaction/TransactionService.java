@@ -11,4 +11,7 @@ import id.holigo.services.common.model.TransactionDto;
 
 public interface TransactionService {
     TransactionDto getTransaction(UUID id) throws JsonMappingException, JsonProcessingException, JMSException;
+
+    void issuedTransaction(UUID id);
+
 }

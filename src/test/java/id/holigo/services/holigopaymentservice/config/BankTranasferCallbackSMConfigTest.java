@@ -9,10 +9,10 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
 
 import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEnum;
-import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEvent;
+import id.holigo.services.holigopaymentservice.events.BankTransferStatusEvent;
 
 @SpringBootTest
-public class StateMachineConfigTest {
+public class BankTranasferCallbackSMConfigTest {
 
     @Autowired
     StateMachineFactory<BankTransferStatusEnum, BankTransferStatusEvent> factory;
