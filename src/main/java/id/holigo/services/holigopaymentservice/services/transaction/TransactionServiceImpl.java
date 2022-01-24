@@ -16,8 +16,10 @@ import org.springframework.jms.core.MessageCreator;
 import org.springframework.stereotype.Service;
 
 import id.holigo.services.common.events.TransactionEvent;
+import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.common.model.TransactionDto;
 import id.holigo.services.holigopaymentservice.config.JmsConfig;
+import id.holigo.services.holigopaymentservice.domain.Payment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,9 +60,10 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public void issuedTransaction(UUID id) {
+    public void issuedTransaction(UUID id, Payment payment) {
         log.info("issuedTransaction is running with transaction id : " + id.toString());
-        TransactionDto transactionDto = TransactionDto.builder().id(id).build();
+        TransactionDto transactionDto = TransactionDto.builder().id(id).paymentStatus(PaymentStatusEnum.WAITING_PAYMENT)
+                .paymentId(payment.getId()).build();
         jmsTemplate.convertAndSend(JmsConfig.ISSUED_TRANSACTION_BY_ID, new TransactionEvent(transactionDto));
     }
 

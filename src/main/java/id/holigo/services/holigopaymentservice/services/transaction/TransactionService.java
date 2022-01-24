@@ -8,10 +8,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 import id.holigo.services.common.model.TransactionDto;
+import id.holigo.services.holigopaymentservice.domain.Payment;
 
 public interface TransactionService {
     TransactionDto getTransaction(UUID id) throws JsonMappingException, JsonProcessingException, JMSException;
 
-    void issuedTransaction(UUID id);
+    void issuedTransaction(UUID id, Payment payment);
 
 }

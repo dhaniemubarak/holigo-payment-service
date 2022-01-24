@@ -76,8 +76,8 @@ public class PaymentServiceImpl implements PaymentService {
                     LocaleContextHolder.getLocale()));
         }
 
-        if (transactionDto.getStatusPayment() != PaymentStatusEnum.WAITING_PAYMENT) {
-            String message = statusPaymentService.getStatusMessage(transactionDto.getStatusPayment());
+        if (transactionDto.getPaymentStatus() != PaymentStatusEnum.WAITING_PAYMENT) {
+            String message = statusPaymentService.getStatusMessage(transactionDto.getPaymentStatus());
             throw new ForbiddenException(messageSource.getMessage(message, null,
                     LocaleContextHolder.getLocale()));
         }
