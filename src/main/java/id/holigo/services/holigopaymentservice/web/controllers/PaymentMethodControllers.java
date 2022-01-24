@@ -26,7 +26,7 @@ public class PaymentMethodControllers {
     @Autowired
     private PaymentMethodMapper paymentMethodMapper;
 
-    @GetMapping("/api/v1/payment_methods")
+    @GetMapping("/api/v1/paymentMethods")
     public ResponseEntity<List<PaymentMethodDto>> index() {
         return new ResponseEntity<>(
                 paymentMethodService.getShowPaymentMethod().stream()
