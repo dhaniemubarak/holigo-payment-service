@@ -147,7 +147,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Create payment after get callback from supplier
         Payment savedPayment = paymentRepository.save(payment);
-
+        transactionService.setPaymentInTransaction(payment.getTransactionId(), payment);
         return savedPayment;
     }
 

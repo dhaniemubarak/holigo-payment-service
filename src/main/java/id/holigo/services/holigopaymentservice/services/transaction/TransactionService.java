@@ -13,6 +13,8 @@ import id.holigo.services.holigopaymentservice.domain.Payment;
 public interface TransactionService {
     TransactionDto getTransaction(UUID id) throws JsonMappingException, JsonProcessingException, JMSException;
 
+    void setPaymentInTransaction(UUID id, Payment payment);
+
     void issuedTransaction(UUID id, Payment payment);
 
 }
