@@ -44,7 +44,6 @@ public class Payment {
     private UUID transactionId;
 
     private Long userId;
-
     @Column(columnDefinition = "varchar(10)", nullable = false)
     private String paymentServiceId;
 

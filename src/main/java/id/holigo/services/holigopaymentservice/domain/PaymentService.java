@@ -3,12 +3,15 @@ package id.holigo.services.holigopaymentservice.domain;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
@@ -63,5 +66,8 @@ public class PaymentService {
     @ManyToOne(fetch = FetchType.EAGER)
     @JsonBackReference
     private PaymentMethod paymentMethod;
+
+    @OneToMany(mappedBy = "paymentService", fetch = FetchType.EAGER)
+    private List<PaymentInstruction> paymentInstructions = new ArrayList<>();
 
 }
