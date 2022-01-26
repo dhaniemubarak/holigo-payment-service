@@ -25,6 +25,5 @@ public class CompanyBankAccountDto {
     private PaymentServiceStatusEnum status;
 
     private PaymentServiceDto paymentService;
-    @Builder.Default
-    private List<PaymentInstructionDto> paymentIntructions = new ArrayList<>();
+    
 }

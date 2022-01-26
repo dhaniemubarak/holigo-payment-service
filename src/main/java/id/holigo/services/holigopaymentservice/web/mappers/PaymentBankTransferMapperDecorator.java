@@ -61,12 +61,13 @@ public abstract class PaymentBankTransferMapperDecorator implements PaymentBankT
                 .companyBankAccountToCompanyBankAccountDto(companyBankAccount);
         companyBankAccountDto
                 .setPaymentService(paymentServiceToPaymentServiceDto(companyBankAccount.getPaymentService()));
-        companyBankAccountDto
+        ;
+        paymentBankTransferDto
+                .setBank(companyBankAccountDto);
+        paymentBankTransferDto
                 .setPaymentIntructions(companyBankAccount.getPaymentService().getPaymentInstructions().stream()
                         .map(paymentInstructionMapper::paymentInstructionToPaymentInstructionDto)
                         .collect(Collectors.toList()));
-        paymentBankTransferDto
-                .setBank(companyBankAccountDto);
 
         return paymentBankTransferDto;
     }

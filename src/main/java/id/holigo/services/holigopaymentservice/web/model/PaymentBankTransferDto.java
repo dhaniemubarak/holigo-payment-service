@@ -2,6 +2,8 @@ package id.holigo.services.holigopaymentservice.web.model;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import id.holigo.services.common.model.PaymentStatusEnum;
@@ -37,4 +39,7 @@ public class PaymentBankTransferDto implements Serializable {
     private String reference;
 
     private CompanyBankAccountDto bank;
+
+    @Builder.Default
+    private List<PaymentInstructionDto> paymentIntructions = new ArrayList<>();
 }
