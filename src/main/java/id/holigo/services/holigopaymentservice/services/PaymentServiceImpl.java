@@ -115,6 +115,7 @@ public class PaymentServiceImpl implements PaymentService {
                 paymentBankTransfer.setBillAmount(paymentServiceAmount);
                 paymentBankTransfer.setVatAmount(BigDecimal.valueOf(0));
                 paymentBankTransfer.setServiceFeeAmount(serviceFeeAmount);
+                paymentBankTransfer.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
                 PaymentBankTransfer savedPaymentBankTransfer = paymentBankTransferRepository.save(paymentBankTransfer);
                 detailType = "bankTransfer";
                 detailId = savedPaymentBankTransfer.getId().toString();
