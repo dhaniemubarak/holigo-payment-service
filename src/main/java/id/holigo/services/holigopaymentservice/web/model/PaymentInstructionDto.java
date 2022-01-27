@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class PaymentInstructionDto implements Serializable {
 
-    private String indexDescription;
+    private String description;
 
     private Integer sort;
 

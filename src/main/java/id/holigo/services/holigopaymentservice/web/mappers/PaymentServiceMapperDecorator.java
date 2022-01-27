@@ -8,6 +8,7 @@ import id.holigo.services.holigopaymentservice.domain.PaymentService;
 import id.holigo.services.holigopaymentservice.web.model.PaymentServiceDto;
 
 public abstract class PaymentServiceMapperDecorator implements PaymentServiceMapper {
+
     @Autowired
     private MessageSource messageSource;
 
@@ -23,6 +24,7 @@ public abstract class PaymentServiceMapperDecorator implements PaymentServiceMap
         return paymentServiceMapper.paymentServiceDtoToPaymentService(paymentServiceDto);
     }
 
+    @Override
     public PaymentServiceDto paymentServiceToPaymentServiceDto(PaymentService paymentService) {
         PaymentServiceDto paymentServiceDto = paymentServiceMapper.paymentServiceToPaymentServiceDto(paymentService);
         paymentServiceDto.setName(

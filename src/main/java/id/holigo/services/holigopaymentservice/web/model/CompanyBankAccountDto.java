@@ -1,8 +1,5 @@
 package id.holigo.services.holigopaymentservice.web.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import id.holigo.services.holigopaymentservice.domain.PaymentServiceStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
