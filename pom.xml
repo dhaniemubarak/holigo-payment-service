@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>id.holigo.services</groupId>
 	<artifactId>holigo-payment-service</artifactId>
-	<version>1.3.1</version>
+	<version>1.3.2</version>
 	<name>holigo-payment-service</name>
 	<description>Holigo payment method service</description>
 	<properties>
