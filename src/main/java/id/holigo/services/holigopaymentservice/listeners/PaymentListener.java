@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import id.holigo.services.common.events.TransactionEvent;
 import id.holigo.services.common.model.OrderStatusEnum;
@@ -32,6 +33,7 @@ public class PaymentListener {
     @Autowired
     private final BankTransferCallbackService bankTransferCallbackService;
 
+    @Transactional
     @JmsListener(destination = JmsConfig.UPDATE_PAYMENT_STATUS_BY_PAYMENT_ID)
     public void listenForUpdatePaymentStatus(TransactionEvent transactionEvent) {
         log.info("listenForUpdatePaymentStatus is running...");
