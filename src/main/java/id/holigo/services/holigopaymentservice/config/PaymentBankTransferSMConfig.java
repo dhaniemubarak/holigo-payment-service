@@ -19,7 +19,7 @@ import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.events.PaymentBankTransferEvent;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
 import id.holigo.services.holigopaymentservice.services.PaymentBankTransferServiceImpl;
-import id.holigo.services.holigopaymentservice.services.PaymentService;
+// import id.holigo.services.holigopaymentservice.services.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,8 +33,8 @@ public class PaymentBankTransferSMConfig
     @Autowired
     private final PaymentRepository paymentRepository;
 
-    @Autowired
-    private final PaymentService paymentService;
+    // @Autowired
+    // private final PaymentService paymentService;
 
     @Override
     public void configure(StateMachineStateConfigurer<PaymentStatusEnum, PaymentBankTransferEvent> states)
@@ -78,7 +78,7 @@ public class PaymentBankTransferSMConfig
                 log.info("Calling payment service for isseud");
                 Payment payment = fetchPayment.get();
                 log.info("Payment -> {}", payment);
-                paymentService.paymentHasBeenPaid(payment.getId());
+                // paymentService.paymentHasBeenPaid(payment.getId());
             } else {
                 log.info("Payment not found");
             }
