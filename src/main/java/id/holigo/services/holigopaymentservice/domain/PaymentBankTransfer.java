@@ -38,6 +38,8 @@ public class PaymentBankTransfer {
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID id;
 
+    private Long userId;
+
     @Column(columnDefinition = "varchar(10)", nullable = false)
     private String paymentServiceId;
 
