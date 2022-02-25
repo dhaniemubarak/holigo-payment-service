@@ -1,6 +1,8 @@
 package id.holigo.services.holigopaymentservice.services;
 
+import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import id.holigo.services.common.model.PaymentStatusEnum;
+import id.holigo.services.common.model.TransactionDto;
+import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
 import id.holigo.services.holigopaymentservice.events.PaymentBankTransferEvent;
 import id.holigo.services.holigopaymentservice.repositories.PaymentBankTransferRepository;
@@ -20,6 +24,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Service
 public class PaymentBankTransferServiceImpl implements PaymentBankTransferService {
+
+    private final Integer min = 1;
+
+    private final Integer max = 999;
 
     public static final String PAYMENT_BANK_TRANSFER_HEADER = "payment_bank_transfer_id";
 
@@ -59,6 +67,34 @@ public class PaymentBankTransferServiceImpl implements PaymentBankTransferServic
         });
         sm.start();
         return sm;
+    }
+
+    @Override
+    public PaymentBankTransfer createNewBankTransfer(TransactionDto transactionDto,
+            Payment payment) {
+        BigDecimal serviceFeeAmount = BigDecimal.valueOf(0.00);
+        BigDecimal paymentServiceAmount = BigDecimal.valueOf(0.00);
+        BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());
+        Integer uniqueCode = randomNumber();
+        serviceFeeAmount = serviceFeeAmount.add(BigDecimal.valueOf(uniqueCode));
+        paymentServiceAmount = totalAmount
+                .add(paymentServiceAmount.add(serviceFeeAmount).subtract(payment.getPointAmount()));
+        PaymentBankTransfer paymentBankTransfer = new PaymentBankTransfer();
+        paymentBankTransfer.setUserId(payment.getUserId());
+        paymentBankTransfer.setPaymentServiceId(payment.getPaymentServiceId());
+        paymentBankTransfer.setTotalAmount(totalAmount);
+        paymentBankTransfer.setUniqueCode(uniqueCode);
+        paymentBankTransfer.setFdsAmount(BigDecimal.valueOf(0));
+        paymentBankTransfer.setBillAmount(paymentServiceAmount);
+        paymentBankTransfer.setVatAmount(BigDecimal.valueOf(0));
+        paymentBankTransfer.setServiceFeeAmount(serviceFeeAmount);
+        paymentBankTransfer.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
+        PaymentBankTransfer savedPaymentBankTransfer = paymentBankTransferRepository.save(paymentBankTransfer);
+        return savedPaymentBankTransfer;
+    }
+
+    private Integer randomNumber() {
+        return ThreadLocalRandom.current().nextInt(min, max + 1);
     }
 
 }

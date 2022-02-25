@@ -2,7 +2,6 @@ package id.holigo.services.holigopaymentservice.services;
 
 import java.math.BigDecimal;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import javax.jms.JMSException;
 import javax.transaction.Transactional;
@@ -24,8 +23,8 @@ import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.common.model.TransactionDto;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
+import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
-import id.holigo.services.holigopaymentservice.repositories.PaymentBankTransferRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
 import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
 import id.holigo.services.holigopaymentservice.web.exceptions.ForbiddenException;
@@ -35,10 +34,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Service
 public class PaymentServiceImpl implements PaymentService {
-
-    private final Integer min = 1;
-
-    private final Integer max = 999;
 
     public static final String PAYMENT_HEADER = "payment_id";
 
@@ -55,7 +50,10 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
 
     @Autowired
-    private final PaymentBankTransferRepository paymentBankTransferRepository;
+    private PaymentBankTransferService paymentBankTransferService;
+
+    @Autowired
+    PaymentVirtualAccountService paymentVirtualAccountService;
 
     private final StateMachineFactory<PaymentStatusEnum, PaymentStatusEvent> stateMachineFactory;
 
@@ -88,14 +86,14 @@ public class PaymentServiceImpl implements PaymentService {
 
             // Point credit
         }
-
+        payment.setPointAmount(pointAmount);
         // Check for voucher
         BigDecimal discountAmount = BigDecimal.valueOf(0.00);
-
         // Switch selected payment
         BigDecimal paymentServiceAmount = BigDecimal.valueOf(0.00);
         BigDecimal serviceFeeAmount = BigDecimal.valueOf(0.00);
         BigDecimal totalAmount = transactionDto.getFareAmount().subtract(discountAmount);
+        BigDecimal remainingAmount = paymentServiceAmount;
         String detailType = null;
         String detailId = UUID.randomUUID().toString();
         switch (payment.getPaymentServiceId()) {
@@ -103,27 +101,31 @@ public class PaymentServiceImpl implements PaymentService {
             case "BT_MANDIRI":
             case "BT_BNI":
             case "BT_BSI":
-                Integer uniqueCode = randomNumber();
-                serviceFeeAmount = serviceFeeAmount.add(BigDecimal.valueOf(uniqueCode));
-                paymentServiceAmount = totalAmount
-                        .add(paymentServiceAmount.add(serviceFeeAmount).subtract(pointAmount));
-                PaymentBankTransfer paymentBankTransfer = new PaymentBankTransfer();
-                paymentBankTransfer.setPaymentServiceId(payment.getPaymentServiceId());
-                paymentBankTransfer.setTotalAmount(totalAmount);
-                paymentBankTransfer.setUniqueCode(uniqueCode);
-                paymentBankTransfer.setFdsAmount(BigDecimal.valueOf(0));
-                paymentBankTransfer.setBillAmount(paymentServiceAmount);
-                paymentBankTransfer.setVatAmount(BigDecimal.valueOf(0));
-                paymentBankTransfer.setServiceFeeAmount(serviceFeeAmount);
-                paymentBankTransfer.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
-                PaymentBankTransfer savedPaymentBankTransfer = paymentBankTransferRepository.save(paymentBankTransfer);
+                PaymentBankTransfer paymentBankTransfer = paymentBankTransferService
+                        .createNewBankTransfer(transactionDto, payment);
                 detailType = "bankTransfer";
-                detailId = savedPaymentBankTransfer.getId().toString();
+                detailId = paymentBankTransfer.getId().toString();
+                paymentServiceAmount = paymentBankTransfer.getBillAmount();
+                remainingAmount = paymentBankTransfer.getBillAmount();
+                serviceFeeAmount = paymentBankTransfer.getServiceFeeAmount();
+                totalAmount = paymentBankTransfer.getTotalAmount();
                 break;
             case "VA_BCA":
             case "VA_MANDIRI":
             case "VA_BNI":
+                /**
+                 * Jika memilih virtual account, pastikan tagihan virtual account yang aktif
+                 * pada metode pembayaran virtual account dengan bank yang dipilih 
+                 * untuk user tersebut hanya satu. Maka lakukan validasi terlebih dahulu
+                 */
+                PaymentVirtualAccount paymentVirtualAccount = paymentVirtualAccountService
+                        .createNewVirtualAccount(transactionDto, payment);
                 detailType = "virtualAccount";
+                detailId = paymentVirtualAccount.getId().toString();
+                paymentServiceAmount = paymentVirtualAccount.getBillAmount();
+                remainingAmount = paymentVirtualAccount.getBillAmount();
+                serviceFeeAmount = paymentVirtualAccount.getServiceFeeAmount();
+                totalAmount = paymentVirtualAccount.getTotalAmount();
                 break;
             case "CC_ALL":
                 detailType = "creditCard";
@@ -132,7 +134,6 @@ public class PaymentServiceImpl implements PaymentService {
                 detailType = "undefined";
                 break;
         }
-        BigDecimal remainingAmount = paymentServiceAmount;
 
         // Set payment
         payment.setFareAmount(transactionDto.getFareAmount());
@@ -150,10 +151,6 @@ public class PaymentServiceImpl implements PaymentService {
         Payment savedPayment = paymentRepository.save(payment);
         transactionService.setPaymentInTransaction(payment.getTransactionId(), payment);
         return savedPayment;
-    }
-
-    private Integer randomNumber() {
-        return ThreadLocalRandom.current().nextInt(min, max + 1);
     }
 
     @Transactional
