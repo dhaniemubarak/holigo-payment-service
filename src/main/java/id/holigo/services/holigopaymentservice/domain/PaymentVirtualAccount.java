@@ -10,6 +10,7 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToOne;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
@@ -74,7 +75,7 @@ public class PaymentVirtualAccount {
 
     private Long callbackId;
 
-    @Column(columnDefinition = "varchar(10)", nullable = false)
-    private String paymentServiceId;
+    @OneToOne
+    private PaymentService paymentService;
 
 }

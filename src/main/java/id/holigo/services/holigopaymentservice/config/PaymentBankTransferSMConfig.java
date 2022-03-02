@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-@EnableStateMachineFactory(name = "paymentBankTrasnferSMF")
+@EnableStateMachineFactory(name = "paymentBankTransferSMF")
 @Configuration
 public class PaymentBankTransferSMConfig
         extends StateMachineConfigurerAdapter<PaymentStatusEnum, PaymentBankTransferEvent> {

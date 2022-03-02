@@ -81,7 +81,7 @@ public class PaymentBankTransferServiceImpl implements PaymentBankTransferServic
                 .add(paymentServiceAmount.add(serviceFeeAmount).subtract(payment.getPointAmount()));
         PaymentBankTransfer paymentBankTransfer = new PaymentBankTransfer();
         paymentBankTransfer.setUserId(payment.getUserId());
-        paymentBankTransfer.setPaymentServiceId(payment.getPaymentServiceId());
+        paymentBankTransfer.setPaymentServiceId(payment.getPaymentService().getId());
         paymentBankTransfer.setTotalAmount(totalAmount);
         paymentBankTransfer.setUniqueCode(uniqueCode);
         paymentBankTransfer.setFdsAmount(BigDecimal.valueOf(0));

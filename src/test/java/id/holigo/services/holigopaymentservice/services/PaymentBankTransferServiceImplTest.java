@@ -17,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
+import id.holigo.services.holigopaymentservice.domain.PaymentService;
 import id.holigo.services.holigopaymentservice.repositories.BankTransferCallbackRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentBankTransferRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
@@ -40,11 +41,16 @@ public class PaymentBankTransferServiceImplTest {
 
     Payment payment;
 
+    PaymentService paymentService;
+
     @BeforeEach
     public void setUp() {
+
+        paymentService = PaymentService.builder().id("BT_BCA").build();
+
         payment = Payment.builder().id(UUID.fromString("51f80e20-b573-447b-a365-040f53fb6e5b"))
                 .transactionId(UUID.fromString("1ef35204-a505-455a-894a-b1b5cdf43b44")).userId(5L)
-                .paymentServiceId("BT_BCA")
+                .paymentService(paymentService)
                 .fareAmount(new BigDecimal(98500.00)).serviceFeeAmount(new BigDecimal(35.00))
                 .discountAmount(new BigDecimal(0.00))
                 .totalAmount(new BigDecimal(98535.00)).paymentServiceAmount(new BigDecimal(98535.00)).isSplitBill(false)
@@ -72,7 +78,7 @@ public class PaymentBankTransferServiceImplTest {
         assertEquals(PaymentStatusEnum.PAID, paymentBanktransfer.getStatus());
 
         Payment getPayment = paymentRepository.getById(payment.getId());
-        assertEquals(PaymentStatusEnum.PAID, getPayment.getStatus());
+        assertEquals(PaymentStatusEnum.WAITING_PAYMENT, getPayment.getStatus());
 
     }
 }

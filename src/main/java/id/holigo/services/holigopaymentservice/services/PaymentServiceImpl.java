@@ -26,6 +26,7 @@ import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
 import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
+import id.holigo.services.holigopaymentservice.repositories.PaymentServiceRepository;
 import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
 import id.holigo.services.holigopaymentservice.web.exceptions.ForbiddenException;
 import id.holigo.services.holigopaymentservice.web.exceptions.NotFoundException;
@@ -64,6 +65,8 @@ public class PaymentServiceImpl implements PaymentService {
 
         TransactionDto transactionDto = transactionService.getTransaction(payment.getTransactionId());
 
+        
+
         if (transactionDto.getUserId() == null) {
             throw new NotFoundException(messageSource.getMessage("holigo-transaction-service.not_found", null,
                     LocaleContextHolder.getLocale()));
@@ -79,6 +82,9 @@ public class PaymentServiceImpl implements PaymentService {
             throw new ForbiddenException(messageSource.getMessage(message, null,
                     LocaleContextHolder.getLocale()));
         }
+
+        // Cek apakah layanan pembayaran dibuka atau di tutup untuk produk yang mau
+        // dibeli
 
         BigDecimal pointAmount = BigDecimal.valueOf(0);
         if (payment.getIsSplitBill()) {
@@ -96,7 +102,7 @@ public class PaymentServiceImpl implements PaymentService {
         BigDecimal remainingAmount = paymentServiceAmount;
         String detailType = null;
         String detailId = UUID.randomUUID().toString();
-        switch (payment.getPaymentServiceId()) {
+        switch (payment.getPaymentService().getId()) {
             case "BT_BCA":
             case "BT_MANDIRI":
             case "BT_BNI":
@@ -115,7 +121,7 @@ public class PaymentServiceImpl implements PaymentService {
             case "VA_BNI":
                 /**
                  * Jika memilih virtual account, pastikan tagihan virtual account yang aktif
-                 * pada metode pembayaran virtual account dengan bank yang dipilih 
+                 * pada metode pembayaran virtual account dengan bank yang dipilih
                  * untuk user tersebut hanya satu. Maka lakukan validasi terlebih dahulu
                  */
                 PaymentVirtualAccount paymentVirtualAccount = paymentVirtualAccountService

@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @Data
 @Entity
-public class BankTransferCallback {
+public class VirtualAccountCallback {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -35,6 +35,9 @@ public class BankTransferCallback {
 
     @Column(columnDefinition = "varchar(10)")
     private String paymentMerchant;
+
+    @Column(columnDefinition = "varchar(20)")
+    private String accountNumber;
 
     @Column(precision = 10, scale = 2, nullable = false, columnDefinition = "decimal(10,2) default 0")
     private BigDecimal amount;
@@ -50,4 +53,6 @@ public class BankTransferCallback {
 
     @UpdateTimestamp
     private Timestamp updatedAt;
+
+    private Timestamp transactionTime;
 }

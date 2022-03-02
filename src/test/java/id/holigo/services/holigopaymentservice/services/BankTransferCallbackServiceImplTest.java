@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.holigopaymentservice.domain.BankTransferCallback;
-import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEnum;
+import id.holigo.services.holigopaymentservice.domain.PaymentCallbackStatusEnum;
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
 import id.holigo.services.holigopaymentservice.repositories.BankTransferCallbackRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentBankTransferRepository;
@@ -60,7 +60,7 @@ public class BankTransferCallbackServiceImplTest {
 
                 BankTransferCallback findTransactionBankTransferCallback = bankTransferCallbackRepository
                                 .getById(savedBankTransferCallback.getId());
-                assertEquals(BankTransferStatusEnum.PROCESS_ISSUED,
+                assertEquals(PaymentCallbackStatusEnum.PROCESS_ISSUED,
                                 findTransactionBankTransferCallback.getProcessStatus());
         }
 }

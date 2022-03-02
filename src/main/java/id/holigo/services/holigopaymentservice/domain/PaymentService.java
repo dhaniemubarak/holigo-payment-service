@@ -19,6 +19,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -26,6 +27,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Builder
 public class PaymentService {
 
     @Id
@@ -67,6 +69,7 @@ public class PaymentService {
     @JsonBackReference
     private PaymentMethod paymentMethod;
 
+    @Builder.Default
     @OneToMany(mappedBy = "paymentService", fetch = FetchType.EAGER)
     private List<PaymentInstruction> paymentInstructions = new ArrayList<>();
 

@@ -17,7 +17,7 @@ import org.springframework.statemachine.state.State;
 
 import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.holigopaymentservice.domain.BankTransferCallback;
-import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEnum;
+import id.holigo.services.holigopaymentservice.domain.PaymentCallbackStatusEnum;
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
 import id.holigo.services.holigopaymentservice.events.BankTransferStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.BankTransferCallbackRepository;
@@ -31,8 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @EnableStateMachineFactory(name = "bankTransferCallbackSMF")
 @Configuration
-public class BankTranasferCallbackSMConfig
-                extends StateMachineConfigurerAdapter<BankTransferStatusEnum, BankTransferStatusEvent> {
+public class BankTransferCallbackSMConfig
+                extends StateMachineConfigurerAdapter<PaymentCallbackStatusEnum, BankTransferStatusEvent> {
 
         @Autowired
         private final BankTransferCallbackRepository bankTransferCallbackRepository;
@@ -44,69 +44,67 @@ public class BankTranasferCallbackSMConfig
         private final PaymentBankTransferService paymentBankTransferService;
 
         @Override
-        public void configure(StateMachineStateConfigurer<BankTransferStatusEnum, BankTransferStatusEvent> states)
+        public void configure(StateMachineStateConfigurer<PaymentCallbackStatusEnum, BankTransferStatusEvent> states)
                         throws Exception {
-                states.withStates().initial(BankTransferStatusEnum.RECEIVED)
-                                .states(EnumSet.allOf(BankTransferStatusEnum.class))
-                                .end(BankTransferStatusEnum.ISSUED)
-                                .end(BankTransferStatusEnum.TRANSACTION_NOT_FOUND)
-                                .end(BankTransferStatusEnum.ISSUED_FAILED);
+                states.withStates().initial(PaymentCallbackStatusEnum.RECEIVED)
+                                .states(EnumSet.allOf(PaymentCallbackStatusEnum.class))
+                                .end(PaymentCallbackStatusEnum.ISSUED)
+                                .end(PaymentCallbackStatusEnum.TRANSACTION_NOT_FOUND)
+                                .end(PaymentCallbackStatusEnum.ISSUED_FAILED);
         }
 
         @Override
         public void configure(
-                        StateMachineTransitionConfigurer<BankTransferStatusEnum, BankTransferStatusEvent> transitions)
+                        StateMachineTransitionConfigurer<PaymentCallbackStatusEnum, BankTransferStatusEvent> transitions)
                         throws Exception {
-                transitions.withExternal().source(BankTransferStatusEnum.RECEIVED)
-                                .target(BankTransferStatusEnum.RECEIVED)
+                transitions.withExternal().source(PaymentCallbackStatusEnum.RECEIVED)
+                                .target(PaymentCallbackStatusEnum.RECEIVED)
                                 .action(receivedAction())
                                 .event(BankTransferStatusEvent.FIND_TRANSACTION)
                                 .and()
-                                .withExternal().source(BankTransferStatusEnum.RECEIVED)
-                                .target(BankTransferStatusEnum.PROCESS_ISSUED)
+                                .withExternal().source(PaymentCallbackStatusEnum.RECEIVED)
+                                .target(PaymentCallbackStatusEnum.PROCESS_ISSUED)
                                 .action(processIssuedAction())
                                 .event(BankTransferStatusEvent.PROCESS_ISSUED)
                                 .and()
-                                .withExternal().source(BankTransferStatusEnum.RECEIVED)
-                                .target(BankTransferStatusEnum.TRANSACTION_NOT_FOUND)
+                                .withExternal().source(PaymentCallbackStatusEnum.RECEIVED)
+                                .target(PaymentCallbackStatusEnum.TRANSACTION_NOT_FOUND)
                                 .action(transactionNotFoundAction())
                                 .event(BankTransferStatusEvent.TRANSACTION_NOT_FOUND)
                                 .and()
-                                .withExternal().source(BankTransferStatusEnum.PROCESS_ISSUED)
-                                .target(BankTransferStatusEnum.ISSUED)
+                                .withExternal().source(PaymentCallbackStatusEnum.PROCESS_ISSUED)
+                                .target(PaymentCallbackStatusEnum.ISSUED)
                                 .event(BankTransferStatusEvent.ISSUED)
                                 .and()
-                                .withExternal().source(BankTransferStatusEnum.PROCESS_ISSUED)
-                                .target(BankTransferStatusEnum.ISSUED_FAILED)
+                                .withExternal().source(PaymentCallbackStatusEnum.PROCESS_ISSUED)
+                                .target(PaymentCallbackStatusEnum.ISSUED_FAILED)
                                 .event(BankTransferStatusEvent.ISSUED_FAILED);
         }
 
         @Override
         public void configure(
-                        StateMachineConfigurationConfigurer<BankTransferStatusEnum, BankTransferStatusEvent> config)
+                        StateMachineConfigurationConfigurer<PaymentCallbackStatusEnum, BankTransferStatusEvent> config)
                         throws Exception {
-                StateMachineListenerAdapter<BankTransferStatusEnum, BankTransferStatusEvent> adapter = new StateMachineListenerAdapter<>() {
+                StateMachineListenerAdapter<PaymentCallbackStatusEnum, BankTransferStatusEvent> adapter = new StateMachineListenerAdapter<>() {
                         @Override
-                        public void stateChanged(State<BankTransferStatusEnum, BankTransferStatusEvent> from,
-                                        State<BankTransferStatusEnum, BankTransferStatusEvent> to) {
+                        public void stateChanged(State<PaymentCallbackStatusEnum, BankTransferStatusEvent> from,
+                                        State<PaymentCallbackStatusEnum, BankTransferStatusEvent> to) {
                                 log.info(String.format("stateChange(from: %s, to %s)", from, to));
                         }
                 };
                 config.withConfiguration().listener(adapter);
         }
 
-        public Action<BankTransferStatusEnum, BankTransferStatusEvent> receivedAction() {
+        public Action<PaymentCallbackStatusEnum, BankTransferStatusEvent> receivedAction() {
                 return context -> {
-                        // find
-
                         log.info("receivedAction was called");
                         log.info("header -> {}",
                                         context.getMessageHeader(
-                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBEACK_HEADER));
+                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER));
                         BankTransferCallback bankTransferCallback = bankTransferCallbackRepository
                                         .getById(Long.valueOf(
                                                         context.getMessageHeader(
-                                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBEACK_HEADER)
+                                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER)
                                                                         .toString()));
                         log.info("bank Transfer callback -> {}",
                                         bankTransferCallback);
@@ -121,7 +119,7 @@ public class BankTranasferCallbackSMConfig
                                 context.getStateMachine()
                                                 .sendEvent(MessageBuilder
                                                                 .withPayload(BankTransferStatusEvent.PROCESS_ISSUED)
-                                                                .setHeader(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBEACK_HEADER,
+                                                                .setHeader(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER,
                                                                                 bankTransferCallback.getId())
                                                                 .build());
                                 PaymentBankTransfer paymentBankTransfer = fetchPaymentBankTransfer.get();
@@ -135,7 +133,7 @@ public class BankTranasferCallbackSMConfig
                                 context.getStateMachine()
                                                 .sendEvent(MessageBuilder.withPayload(
                                                                 BankTransferStatusEvent.TRANSACTION_NOT_FOUND)
-                                                                .setHeader(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBEACK_HEADER,
+                                                                .setHeader(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER,
                                                                                 bankTransferCallback.getId())
                                                                 .build());
 
@@ -143,30 +141,30 @@ public class BankTranasferCallbackSMConfig
                 };
         }
 
-        public Action<BankTransferStatusEnum, BankTransferStatusEvent> processIssuedAction() {
+        public Action<PaymentCallbackStatusEnum, BankTransferStatusEvent> processIssuedAction() {
                 return context -> {
                         log.info("processIssuedAction is running....");
                         BankTransferCallback bankTransferCallback = bankTransferCallbackRepository.getById(Long.valueOf(
                                         context.getMessageHeader(
-                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBEACK_HEADER)
+                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER)
                                                         .toString()));
                         log.info("latest status bankTransferCallback -> {}", bankTransferCallback);
                         context.getStateMachine()
                                         .sendEvent(MessageBuilder
                                                         .withPayload(BankTransferStatusEvent.TRANSACTION_NOT_FOUND)
-                                                        .setHeader(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBEACK_HEADER,
+                                                        .setHeader(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER,
                                                                         context.getMessageHeader(
-                                                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBEACK_HEADER))
+                                                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER))
                                                         .build());
                 };
         }
 
-        public Action<BankTransferStatusEnum, BankTransferStatusEvent> transactionNotFoundAction() {
+        public Action<PaymentCallbackStatusEnum, BankTransferStatusEvent> transactionNotFoundAction() {
                 return context -> {
                         log.info("transactionNotFoundAction is running....");
                         BankTransferCallback bankTransferCallback = bankTransferCallbackRepository.getById(Long.valueOf(
                                         context.getMessageHeader(
-                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBEACK_HEADER)
+                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER)
                                                         .toString()));
                         log.info("latest status bankTransferCallback -> {}", bankTransferCallback);
                 };

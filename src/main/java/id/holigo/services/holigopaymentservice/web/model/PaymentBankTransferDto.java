@@ -41,5 +41,5 @@ public class PaymentBankTransferDto implements Serializable {
     private CompanyBankAccountDto bank;
 
     @Builder.Default
-    private List<PaymentInstructionDto> paymentIntructions = new ArrayList<>();
+    private List<PaymentInstructionDto> paymentInstructions = new ArrayList<>();
 }

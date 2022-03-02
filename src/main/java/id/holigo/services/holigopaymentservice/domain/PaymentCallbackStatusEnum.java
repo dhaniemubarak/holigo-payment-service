@@ -1,5 +1,5 @@
 package id.holigo.services.holigopaymentservice.domain;
 
-public enum BankTransferStatusEnum {
+public enum PaymentCallbackStatusEnum {
     TRANSACTION_NOT_FOUND, RECEIVED, PROCESS_ISSUED, ISSUED_FAILED, ISSUED
 }

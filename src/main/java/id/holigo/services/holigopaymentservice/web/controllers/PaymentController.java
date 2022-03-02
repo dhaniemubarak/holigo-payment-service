@@ -8,6 +8,7 @@ import javax.validation.Valid;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -22,18 +23,25 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import id.holigo.services.holigopaymentservice.domain.Payment;
+
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
+import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 import id.holigo.services.holigopaymentservice.repositories.PaymentBankTransferRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
+import id.holigo.services.holigopaymentservice.repositories.PaymentServiceRepository;
+import id.holigo.services.holigopaymentservice.repositories.PaymentVirtualAccountRepository;
 import id.holigo.services.holigopaymentservice.services.PaymentService;
 import id.holigo.services.holigopaymentservice.web.exceptions.NotFoundException;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentBankTransferMapper;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentMapper;
+import id.holigo.services.holigopaymentservice.web.mappers.PaymentVirtualAccountMapper;
 import id.holigo.services.holigopaymentservice.web.model.PaymentBankTransferDto;
 import id.holigo.services.holigopaymentservice.web.model.PaymentDtoForUser;
 import id.holigo.services.holigopaymentservice.web.model.RequestPaymentDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 public class PaymentController {
@@ -51,12 +59,28 @@ public class PaymentController {
     private final PaymentBankTransferRepository paymentBankTransferRepository;
 
     @Autowired
+    private final PaymentVirtualAccountRepository paymentVirtualAccountRepository;
+
+    @Autowired
     private final PaymentBankTransferMapper paymentBankTransferMapper;
 
+    @Autowired
+    private final PaymentVirtualAccountMapper paymentVirtualAccountMapper;
+
+    @Autowired
+    private final PaymentServiceRepository paymentServiceRepository;
+
     @PostMapping("/api/v1/payments")
-    public ResponseEntity<HttpStatus> createPaymet(@Valid @RequestBody RequestPaymentDto requestPaymentDto,
+    public ResponseEntity<HttpStatus> createPayment(@Valid @RequestBody RequestPaymentDto requestPaymentDto,
             @RequestHeader("user-id") Long userId) throws JsonMappingException, JsonProcessingException, JMSException {
+
+        Optional<id.holigo.services.holigopaymentservice.domain.PaymentService> fetchPaymentService = paymentServiceRepository
+                .findById(requestPaymentDto.getPaymentServiceId());
+        if (fetchPaymentService.isEmpty()) {
+            throw new NotFoundException("Payment method not found");
+        }
         Payment payment = paymentMapper.requestPaymentDtoToPayment(requestPaymentDto);
+        payment.setPaymentService(fetchPaymentService.get());
         payment.setUserId(userId);
         Payment savedPayment = paymentService.createPayment(payment);
         HttpHeaders httpHeaders = new HttpHeaders();
@@ -75,14 +99,38 @@ public class PaymentController {
         return new ResponseEntity<>(paymentDtoForUser, HttpStatus.OK);
     }
 
-    @GetMapping("/api/v1/payments/{paymentId}/bankTransfer/{bankTransferId}")
-    public ResponseEntity<PaymentBankTransferDto> getPaymentBankTransafer(@PathVariable("bankTransferId") UUID id) {
-        Optional<PaymentBankTransfer> fetchPaymentBankTransfer = paymentBankTransferRepository.findById(id);
-        if (fetchPaymentBankTransfer.isEmpty()) {
-            throw new NotFoundException("Detail not found.");
+    @GetMapping("/api/v1/payments/{paymentId}/{paymentService}/{detailId}")
+    public ResponseEntity<?> getPaymentDetail(
+            @RequestHeader("user-id") Long userId,
+            @PathVariable("paymentId") UUID paymentId,
+            @PathVariable("paymentService") String paymentService,
+            @PathVariable("detailId") UUID detailId) {
+        ResponseEntity<?> response;
+        switch (paymentService) {
+            case "bankTransfer":
+                log.info("bank transfer is running with id -> {}", detailId);
+                Optional<PaymentBankTransfer> fetchPaymentBankTransfer = paymentBankTransferRepository
+                        .findById(detailId);
+                if (fetchPaymentBankTransfer.isEmpty()) {
+                    throw new NotFoundException("Detail not found.");
+                }
+                response = new ResponseEntity<>(paymentBankTransferMapper
+                        .paymentBankTransferToPaymentBankTransferDto(fetchPaymentBankTransfer.get()), HttpStatus.OK);
+                break;
+            case "virtualAccount":
+                Optional<PaymentVirtualAccount> fetchPaymentVirtualAccount = paymentVirtualAccountRepository
+                        .findById(detailId);
+                if (fetchPaymentVirtualAccount.isEmpty()) {
+                    throw new NotFoundException("Detail not found.");
+                }
+                response = new ResponseEntity<>(paymentVirtualAccountMapper
+                        .paymentVirtualAccountToPaymentVirtualAccountDto(fetchPaymentVirtualAccount.get(), true, true),
+                        HttpStatus.OK);
+                break;
+            default:
+                response = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                break;
         }
-        return new ResponseEntity<>(
-                paymentBankTransferMapper.paymentBankTransferToPaymentBankTransferDto(fetchPaymentBankTransfer.get()),
-                HttpStatus.OK);
+        return response;
     }
 }

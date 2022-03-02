@@ -36,7 +36,8 @@ public class PaymentVirtualAccountController {
 
         if (fetchPaymentVirtualAccount.isPresent()) {
             return new ResponseEntity<>(paymentVirtualAccountMapper
-                    .paymentVirtualAccountToPaymentVirtualAccountDto(fetchPaymentVirtualAccount.get()), HttpStatus.OK);
+                    .paymentVirtualAccountToPaymentVirtualAccountDto(fetchPaymentVirtualAccount.get(), false, false),
+                    HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }

@@ -10,7 +10,7 @@ import org.springframework.statemachine.transition.Transition;
 import org.springframework.stereotype.Component;
 
 import id.holigo.services.holigopaymentservice.domain.BankTransferCallback;
-import id.holigo.services.holigopaymentservice.domain.BankTransferStatusEnum;
+import id.holigo.services.holigopaymentservice.domain.PaymentCallbackStatusEnum;
 import id.holigo.services.holigopaymentservice.events.BankTransferStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.BankTransferCallbackRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,18 +18,18 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Component
 public class BankTransferCallbackInterceptor
-        extends StateMachineInterceptorAdapter<BankTransferStatusEnum, BankTransferStatusEvent> {
+        extends StateMachineInterceptorAdapter<PaymentCallbackStatusEnum, BankTransferStatusEvent> {
 
     private final BankTransferCallbackRepository bankTransferCallbackRepository;
 
     @Override
-    public void preStateChange(State<BankTransferStatusEnum, BankTransferStatusEvent> state,
+    public void preStateChange(State<PaymentCallbackStatusEnum, BankTransferStatusEvent> state,
             Message<BankTransferStatusEvent> message,
-            Transition<BankTransferStatusEnum, BankTransferStatusEvent> transition,
-            StateMachine<BankTransferStatusEnum, BankTransferStatusEvent> stateMachine) {
+            Transition<PaymentCallbackStatusEnum, BankTransferStatusEvent> transition,
+            StateMachine<PaymentCallbackStatusEnum, BankTransferStatusEvent> stateMachine) {
         Optional.ofNullable(message).ifPresent(msg -> {
             Optional.ofNullable(Long.class.cast(
-                    msg.getHeaders().getOrDefault(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBEACK_HEADER, 1L)))
+                    msg.getHeaders().getOrDefault(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER, 1L)))
                     .ifPresent(bankTransferCallbackId -> {
                         BankTransferCallback bankTransferCallback = bankTransferCallbackRepository
                                 .getById(bankTransferCallbackId);

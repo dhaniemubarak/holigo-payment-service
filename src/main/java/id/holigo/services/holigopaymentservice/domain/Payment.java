@@ -10,6 +10,7 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToOne;
 import javax.persistence.Transient;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -44,8 +45,12 @@ public class Payment {
     private UUID transactionId;
 
     private Long userId;
-    @Column(columnDefinition = "varchar(10)", nullable = false)
-    private String paymentServiceId;
+
+    @OneToOne
+    PaymentService paymentService;
+
+    // @Column(columnDefinition = "varchar(10)", nullable = false)
+    // private String paymentServiceId;
 
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal fareAmount;

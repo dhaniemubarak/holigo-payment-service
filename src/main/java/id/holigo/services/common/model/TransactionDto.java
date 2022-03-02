@@ -22,7 +22,7 @@ public class TransactionDto implements Serializable {
 
     private UUID parentId;
 
-    private String shortId;
+    private String invoiceNumber;
 
     private Long userId;
 

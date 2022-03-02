@@ -29,7 +29,7 @@ public abstract class PaymentBankTransferMapperDecorator implements PaymentBankT
     private CompanyBankAccountRepository companyBankAccountRepository;
 
     @Autowired
-    public void setPaymetBankTransferMapper(PaymentBankTransferMapper paymentBankTransferMapper) {
+    public void setPaymentBankTransferMapper(PaymentBankTransferMapper paymentBankTransferMapper) {
         this.paymentBankTransferMapper = paymentBankTransferMapper;
     }
 
@@ -65,7 +65,7 @@ public abstract class PaymentBankTransferMapperDecorator implements PaymentBankT
         paymentBankTransferDto
                 .setBank(companyBankAccountDto);
         paymentBankTransferDto
-                .setPaymentIntructions(companyBankAccount.getPaymentService().getPaymentInstructions().stream()
+                .setPaymentInstructions(companyBankAccount.getPaymentService().getPaymentInstructions().stream()
                         .map(paymentInstructionMapper::paymentInstructionToPaymentInstructionDto)
                         .collect(Collectors.toList()));
 
