@@ -149,13 +149,14 @@ public class BankTransferCallbackSMConfig
                                                         BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER)
                                                         .toString()));
                         log.info("latest status bankTransferCallback -> {}", bankTransferCallback);
-                        context.getStateMachine()
-                                        .sendEvent(MessageBuilder
-                                                        .withPayload(BankTransferStatusEvent.TRANSACTION_NOT_FOUND)
-                                                        .setHeader(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER,
-                                                                        context.getMessageHeader(
-                                                                                        BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER))
-                                                        .build());
+
+                        // context.getStateMachine()
+                        // .sendEvent(MessageBuilder
+                        // .withPayload(BankTransferStatusEvent.TRANSACTION_NOT_FOUND)
+                        // .setHeader(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER,
+                        // context.getMessageHeader(
+                        // BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER))
+                        // .build());
                 };
         }
 

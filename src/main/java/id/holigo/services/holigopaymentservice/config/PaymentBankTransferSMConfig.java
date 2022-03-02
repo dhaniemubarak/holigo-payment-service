@@ -5,20 +5,27 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
+import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
+import org.springframework.statemachine.support.DefaultStateMachineContext;
 
 import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.events.PaymentBankTransferEvent;
+import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
 import id.holigo.services.holigopaymentservice.services.PaymentBankTransferServiceImpl;
+import id.holigo.services.holigopaymentservice.services.PaymentInterceptor;
+import id.holigo.services.holigopaymentservice.services.PaymentServiceImpl;
 // import id.holigo.services.holigopaymentservice.services.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +40,10 @@ public class PaymentBankTransferSMConfig
     @Autowired
     private final PaymentRepository paymentRepository;
 
-    // @Autowired
-    // private final PaymentService paymentService;
+    @Autowired
+    private StateMachineFactory<PaymentStatusEnum, PaymentStatusEvent> stateMachineFactory;
+
+    private final PaymentInterceptor paymentInterceptor;
 
     @Override
     public void configure(StateMachineStateConfigurer<PaymentStatusEnum, PaymentBankTransferEvent> states)
@@ -78,10 +87,29 @@ public class PaymentBankTransferSMConfig
                 log.info("Calling payment service for isseud");
                 Payment payment = fetchPayment.get();
                 log.info("Payment -> {}", payment);
-                // paymentService.paymentHasBeenPaid(payment.getId());
+                StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(payment);
+                sm.sendEvent(MessageBuilder
+                        .withPayload(PaymentStatusEvent.PAYMENT_PAID)
+                        .setHeader(PaymentServiceImpl.PAYMENT_HEADER,
+                                payment.getId().toString())
+                        .build());
             } else {
                 log.info("Payment not found");
             }
         };
+    }
+
+    private StateMachine<PaymentStatusEnum, PaymentStatusEvent> build(Payment payment) {
+        StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = stateMachineFactory
+                .getStateMachine(payment.getId().toString());
+
+        sm.stop();
+        sm.getStateMachineAccessor().doWithAllRegions(sma -> {
+            sma.addStateMachineInterceptor(paymentInterceptor);
+            sma.resetStateMachine(new DefaultStateMachineContext<PaymentStatusEnum, PaymentStatusEvent>(
+                    payment.getStatus(), null, null, null));
+        });
+        sm.start();
+        return sm;
     }
 }

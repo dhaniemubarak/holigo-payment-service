@@ -11,4 +11,6 @@ import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 public interface PaymentVirtualAccountRepository extends JpaRepository<PaymentVirtualAccount, UUID> {
 
     Optional<PaymentVirtualAccount> findByAccountNumberAndStatus(String accountNumber, PaymentStatusEnum status);
+
+    Optional<PaymentVirtualAccount> findByCallbackId(Long callbackId);
 }

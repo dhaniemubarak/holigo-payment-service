@@ -78,7 +78,7 @@ public class PaymentBankTransferServiceImplTest {
         assertEquals(PaymentStatusEnum.PAID, paymentBanktransfer.getStatus());
 
         Payment getPayment = paymentRepository.getById(payment.getId());
-        assertEquals(PaymentStatusEnum.WAITING_PAYMENT, getPayment.getStatus());
+        assertEquals(PaymentStatusEnum.PAID, getPayment.getStatus());
 
     }
 }

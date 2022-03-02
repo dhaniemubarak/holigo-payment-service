@@ -54,7 +54,7 @@ public class PaymentServiceImpl implements PaymentService {
     private PaymentBankTransferService paymentBankTransferService;
 
     @Autowired
-    PaymentVirtualAccountService paymentVirtualAccountService;
+    private PaymentVirtualAccountService paymentVirtualAccountService;
 
     private final StateMachineFactory<PaymentStatusEnum, PaymentStatusEvent> stateMachineFactory;
 
@@ -64,8 +64,6 @@ public class PaymentServiceImpl implements PaymentService {
     public Payment createPayment(Payment payment) throws JsonMappingException, JsonProcessingException, JMSException {
 
         TransactionDto transactionDto = transactionService.getTransaction(payment.getTransactionId());
-
-        
 
         if (transactionDto.getUserId() == null) {
             throw new NotFoundException(messageSource.getMessage("holigo-transaction-service.not_found", null,
@@ -86,19 +84,20 @@ public class PaymentServiceImpl implements PaymentService {
         // Cek apakah layanan pembayaran dibuka atau di tutup untuk produk yang mau
         // dibeli
 
-        BigDecimal pointAmount = BigDecimal.valueOf(0);
+        BigDecimal discountAmount = BigDecimal.valueOf(0.00);
+        BigDecimal pointAmount = BigDecimal.valueOf(0.00);
         if (payment.getIsSplitBill()) {
             // PIN validation
 
             // Point credit
         }
+        payment.setDiscountAmount(discountAmount);
         payment.setPointAmount(pointAmount);
         // Check for voucher
-        BigDecimal discountAmount = BigDecimal.valueOf(0.00);
         // Switch selected payment
         BigDecimal paymentServiceAmount = BigDecimal.valueOf(0.00);
         BigDecimal serviceFeeAmount = BigDecimal.valueOf(0.00);
-        BigDecimal totalAmount = transactionDto.getFareAmount().subtract(discountAmount);
+        BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());
         BigDecimal remainingAmount = paymentServiceAmount;
         String detailType = null;
         String detailId = UUID.randomUUID().toString();
