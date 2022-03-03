@@ -2,7 +2,6 @@ package id.holigo.services.holigopaymentservice.config;
 
 import java.util.EnumSet;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;

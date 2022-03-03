@@ -26,7 +26,6 @@ import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
 import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
-import id.holigo.services.holigopaymentservice.repositories.PaymentServiceRepository;
 import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
 import id.holigo.services.holigopaymentservice.web.exceptions.ForbiddenException;
 import id.holigo.services.holigopaymentservice.web.exceptions.NotFoundException;

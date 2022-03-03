@@ -8,7 +8,6 @@ import javax.validation.Valid;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -35,7 +34,6 @@ import id.holigo.services.holigopaymentservice.web.exceptions.NotFoundException;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentBankTransferMapper;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentMapper;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentVirtualAccountMapper;
-import id.holigo.services.holigopaymentservice.web.model.PaymentBankTransferDto;
 import id.holigo.services.holigopaymentservice.web.model.PaymentDtoForUser;
 import id.holigo.services.holigopaymentservice.web.model.RequestPaymentDto;
 import lombok.RequiredArgsConstructor;
