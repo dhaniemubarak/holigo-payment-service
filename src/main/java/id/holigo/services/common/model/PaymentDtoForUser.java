@@ -1,10 +1,8 @@
-package id.holigo.services.holigopaymentservice.web.model;
+package id.holigo.services.common.model;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.UUID;
-
-import id.holigo.services.common.model.PaymentStatusEnum;
 import lombok.Builder;
 import lombok.Data;
 
@@ -32,7 +30,7 @@ public class PaymentDtoForUser implements Serializable {
 
     private PaymentStatusEnum status;
 
-    private String paymentServiceId;
+    private PaymentServiceDto paymentService;
 
     private String detailId;
 

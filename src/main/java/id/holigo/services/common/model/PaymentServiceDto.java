@@ -1,9 +1,8 @@
-package id.holigo.services.holigopaymentservice.web.model;
+package id.holigo.services.common.model;
 
 import java.math.BigDecimal;
 import java.sql.Time;
 
-import id.holigo.services.holigopaymentservice.domain.PaymentServiceStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

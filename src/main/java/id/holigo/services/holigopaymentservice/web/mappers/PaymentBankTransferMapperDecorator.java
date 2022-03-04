@@ -6,13 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
+import id.holigo.services.common.model.PaymentServiceDto;
 import id.holigo.services.holigopaymentservice.domain.CompanyBankAccount;
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
 import id.holigo.services.holigopaymentservice.domain.PaymentService;
 import id.holigo.services.holigopaymentservice.repositories.CompanyBankAccountRepository;
 import id.holigo.services.holigopaymentservice.web.model.CompanyBankAccountDto;
 import id.holigo.services.holigopaymentservice.web.model.PaymentBankTransferDto;
-import id.holigo.services.holigopaymentservice.web.model.PaymentServiceDto;
 
 public abstract class PaymentBankTransferMapperDecorator implements PaymentBankTransferMapper {
 

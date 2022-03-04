@@ -2,7 +2,8 @@ package id.holigo.services.holigopaymentservice.web.model;
 
 import java.util.List;
 
-import id.holigo.services.holigopaymentservice.domain.PaymentServiceStatusEnum;
+import id.holigo.services.common.model.PaymentServiceDto;
+import id.holigo.services.common.model.PaymentServiceStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

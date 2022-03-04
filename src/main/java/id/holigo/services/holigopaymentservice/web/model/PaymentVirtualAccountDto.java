@@ -5,6 +5,8 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import id.holigo.services.common.model.PaymentServiceDto;
 import id.holigo.services.common.model.PaymentStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

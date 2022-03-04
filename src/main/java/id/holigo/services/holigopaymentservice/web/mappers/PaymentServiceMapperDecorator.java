@@ -4,8 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
+import id.holigo.services.common.model.PaymentServiceDto;
 import id.holigo.services.holigopaymentservice.domain.PaymentService;
-import id.holigo.services.holigopaymentservice.web.model.PaymentServiceDto;
 
 public abstract class PaymentServiceMapperDecorator implements PaymentServiceMapper {
 

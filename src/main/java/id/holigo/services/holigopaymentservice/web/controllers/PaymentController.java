@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import id.holigo.services.common.model.PaymentDtoForUser;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
@@ -34,7 +35,6 @@ import id.holigo.services.holigopaymentservice.web.exceptions.NotFoundException;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentBankTransferMapper;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentMapper;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentVirtualAccountMapper;
-import id.holigo.services.holigopaymentservice.web.model.PaymentDtoForUser;
 import id.holigo.services.holigopaymentservice.web.model.RequestPaymentDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
