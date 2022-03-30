@@ -71,7 +71,6 @@ public class PaymentController {
     @PostMapping("/api/v1/payments")
     public ResponseEntity<HttpStatus> createPayment(@Valid @RequestBody RequestPaymentDto requestPaymentDto,
             @RequestHeader("user-id") Long userId) throws JsonMappingException, JsonProcessingException, JMSException {
-
         Optional<id.holigo.services.holigopaymentservice.domain.PaymentService> fetchPaymentService = paymentServiceRepository
                 .findById(requestPaymentDto.getPaymentServiceId());
         if (fetchPaymentService.isEmpty()) {

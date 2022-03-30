@@ -98,7 +98,6 @@ public class Payment {
     @Column(nullable = true)
     private Timestamp deletedAt;
 
-    @Transient
     private String voucherCode;
 
     @Transient

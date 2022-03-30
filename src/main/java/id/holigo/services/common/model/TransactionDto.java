@@ -34,31 +34,59 @@ public class TransactionDto implements Serializable {
 
     private Timestamp expiredAt;
 
-    private BigDecimal discountAmount;
-
     private BigDecimal fareAmount;
 
-    private BigDecimal ntaAmount;
+    private BigDecimal adminAmount;
 
-    private BigDecimal nraAmount;
+    private BigDecimal discountAmount;
 
-    private Integer serviceId;
+    private BigDecimal pointAmount;
 
-    private Integer productId;
+    private PaymentStatusEnum paymentStatus;
 
-    private String indexUser;
-
-    private String indexCommission;
-
-    private String indexProduct;
+    private OrderStatusEnum orderStatus;
 
     private String transactionId;
 
     private String transactionType;
 
+    private Integer serviceId;
+
+    private Integer productId;
+
+    private String indexProduct;
+
     private UUID paymentId;
 
-    private PaymentStatusEnum paymentStatus;
+    private String paymentServiceId;
 
-    private OrderStatusEnum orderStatus;
+    private String voucherCode;
+
+    private String indexUser;
+
+    private String note;
+
+    private BigDecimal ntaAmount;
+
+    private BigDecimal nraAmount;
+
+    private BigDecimal cpAmount;
+
+    private BigDecimal mpAmount;
+
+    private BigDecimal ipAmount;
+
+    private BigDecimal hpAmount;
+
+    private BigDecimal hvAmount;
+
+    private BigDecimal prAmount;
+
+    private BigDecimal ipcAmount;
+
+    private BigDecimal hpcAmount;
+
+    private BigDecimal prcAmount;
+
+    private BigDecimal mucAmount;
 }

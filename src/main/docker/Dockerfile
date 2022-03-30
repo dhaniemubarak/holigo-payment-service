@@ -1,9 +1,9 @@
-FROM openjdk:17.0-jdk-oracle as builder
+FROM openjdk:17-alpine as builder
 WORKDIR /application
 ADD maven/${project.build.finalName}.jar ${project.build.finalName}.jar
 RUN java -Djarmode=layertools -jar ${project.build.finalName}.jar extract
 
-FROM openjdk:17.0-jdk-oracle 
+FROM eclipse-temurin:17-jre-alpine 
 LABEL   PROJECT_NAME={project.artifactId} \
     PROJECT=${project.id}
 

@@ -70,7 +70,8 @@ public class TransactionServiceImpl implements TransactionService {
     public void setPaymentInTransaction(UUID id, Payment payment) {
         log.info("setPaymentInTransaction is running with transaction id : " + id.toString());
         TransactionDto transactionDto = TransactionDto.builder().id(id).paymentStatus(payment.getStatus())
-                .paymentId(payment.getId()).build();
+                .paymentId(payment.getId()).pointAmount(payment.getPointAmount())
+                .paymentServiceId(payment.getPaymentService().getId()).voucherCode(payment.getVoucherCode()).build();
         jmsTemplate.convertAndSend(JmsConfig.SET_PAYMENT_IN_TRANSACTION_BY_ID, new TransactionEvent(transactionDto));
     }
 

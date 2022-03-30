@@ -20,35 +20,35 @@ public class StatusPaymentServiceImpl implements StatusPaymentService {
     @Override
     public String getStatusMessage(PaymentStatusEnum statusPaymentEnum) {
         String message = null;
-        switch (statusPaymentEnum.toString()) {
-            case "SELECTING_PAYMENT":
+        switch (statusPaymentEnum) {
+            case SELECTING_PAYMENT:
                 message = messageSource.getMessage("payment.selecting_payment", null, LocaleContextHolder.getLocale());
                 break;
-            case "WAITING_PAYMENT":
+            case WAITING_PAYMENT:
                 message = messageSource.getMessage("payment.waiting_payment", null, LocaleContextHolder.getLocale());
                 break;
-            case "VERIFYING_PAYMENT":
+            case VERIFYING_PAYMENT:
                 message = messageSource.getMessage("payment.verifying_payment", null, LocaleContextHolder.getLocale());
                 break;
-            case "PAYMENT_FAILED":
+            case PAYMENT_FAILED:
                 message = messageSource.getMessage("payment.payment_failed", null, LocaleContextHolder.getLocale());
                 break;
-            case "PAID":
+            case PAID:
                 message = messageSource.getMessage("payment.paid", null, LocaleContextHolder.getLocale());
                 break;
-            case "PAYMENT_CANCELED":
+            case PAYMENT_CANCELED:
                 message = messageSource.getMessage("payment.payment_canceled", null, LocaleContextHolder.getLocale());
                 break;
-            case "PAYMENT_EXPIRED":
+            case PAYMENT_EXPIRED:
                 message = messageSource.getMessage("payment.payment_expired", null, LocaleContextHolder.getLocale());
                 break;
-            case "PROCESS_REFUND":
+            case PROCESS_REFUND:
                 message = messageSource.getMessage("payment.process_refund", null, LocaleContextHolder.getLocale());
                 break;
-            case "WAITING_REFUND":
+            case WAITING_REFUND:
                 message = messageSource.getMessage("payment.waiting_refund", null, LocaleContextHolder.getLocale());
                 break;
-            case "REFUNDED":
+            case REFUNDED:
                 message = messageSource.getMessage("payment.refunded", null, LocaleContextHolder.getLocale());
                 break;
             default:

@@ -69,15 +69,15 @@ public class PaymentServiceImpl implements PaymentService {
                     LocaleContextHolder.getLocale()));
         }
 
-        if (transactionDto.getUserId() != payment.getUserId()) {
+        if (transactionDto.getUserId().longValue() != payment.getUserId().longValue()) {
             throw new ForbiddenException(messageSource.getMessage("payment.user_transaction_not_match", null,
                     LocaleContextHolder.getLocale()));
         }
 
         if (transactionDto.getPaymentStatus() != PaymentStatusEnum.SELECTING_PAYMENT) {
             String message = statusPaymentService.getStatusMessage(transactionDto.getPaymentStatus());
-            throw new ForbiddenException(messageSource.getMessage(message, null,
-                    LocaleContextHolder.getLocale()));
+
+            throw new ForbiddenException(message);
         }
 
         // Cek apakah layanan pembayaran dibuka atau di tutup untuk produk yang mau
