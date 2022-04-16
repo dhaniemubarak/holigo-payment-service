@@ -80,6 +80,13 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
         return sm;
     }
 
+    @Override
+    public StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> cancelPayment(UUID id) {
+        StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> sm = build(id);
+        sendEvent(id, sm, PaymentVirtualAccountEvent.PAYMENT_CANCELED);
+        return sm;
+    }
+
     private void sendEvent(UUID id,
             StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> sm, PaymentVirtualAccountEvent event) {
         Message<PaymentVirtualAccountEvent> message = MessageBuilder.withPayload(event)

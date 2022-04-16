@@ -60,7 +60,9 @@ public class PaymentVirtualAccountSMConfig
             throws Exception {
         transitions.withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
                 .target(PaymentStatusEnum.PAID).action(paymentPaidAction())
-                .event(PaymentVirtualAccountEvent.PAYMENT_PAID);
+                .event(PaymentVirtualAccountEvent.PAYMENT_PAID)
+                .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
+                .target(PaymentStatusEnum.PAYMENT_CANCELED).event(PaymentVirtualAccountEvent.PAYMENT_CANCELED);
     }
 
     @Override

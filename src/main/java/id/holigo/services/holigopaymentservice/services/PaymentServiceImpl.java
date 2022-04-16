@@ -1,6 +1,9 @@
 package id.holigo.services.holigopaymentservice.services;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import javax.jms.JMSException;
@@ -30,7 +33,9 @@ import id.holigo.services.holigopaymentservice.services.transaction.TransactionS
 import id.holigo.services.holigopaymentservice.web.exceptions.ForbiddenException;
 import id.holigo.services.holigopaymentservice.web.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class PaymentServiceImpl implements PaymentService {
@@ -117,11 +122,23 @@ public class PaymentServiceImpl implements PaymentService {
             case "VA_BCA":
             case "VA_MANDIRI":
             case "VA_BNI":
+                log.info("MASUK VA");
+
                 /**
                  * Jika memilih virtual account, pastikan tagihan virtual account yang aktif
                  * pada metode pembayaran virtual account dengan bank yang dipilih
                  * untuk user tersebut hanya satu. Maka lakukan validasi terlebih dahulu
                  */
+                /**
+                 * Untuk sementara batalkan terlebih dahulu jika ditemukan payment
+                 * yang sudah ada. Untuk memastikan pembayaran via virtual account
+                 * hanya bisa 1 pembayaran yang statusnya menunggu
+                 * 
+                 */
+                List<Payment> payments = paymentRepository.findAllByUserIdAndStatusAndPaymentServiceId(
+                        payment.getUserId(), PaymentStatusEnum.WAITING_PAYMENT, payment.getPaymentService().getId());
+                cancelPayment(payments);
+
                 PaymentVirtualAccount paymentVirtualAccount = paymentVirtualAccountService
                         .createNewVirtualAccount(transactionDto, payment);
                 detailType = "virtualAccount";
@@ -186,6 +203,35 @@ public class PaymentServiceImpl implements PaymentService {
         });
         sm.start();
         return sm;
+    }
+
+    @Transactional
+    private void cancelPayment(List<Payment> payments) {
+        log.info("LIST OF PAYMENTS -> {}", payments);
+        for (Payment payment : payments) {
+            payment.setDeletedAt(Timestamp.valueOf(LocalDateTime.now()));
+            payment.setStatus(PaymentStatusEnum.PAYMENT_CANCELED);
+            paymentRepository.save(payment);
+            // Refund point yang di gunakan
+            switch (payment.getDetailType()) {
+                case "virtualAccount":
+                    paymentVirtualAccountService.cancelPayment(UUID.fromString(payment.getDetailId()));
+                    break;
+                case "bankTransfer":
+                    break;
+
+            }
+            // Payment newPayment =
+            // Payment.builder().id(null).status(PaymentStatusEnum.SELECTING_PAYMENT)
+            // .pointAmount(new
+            // BigDecimal(0.00)).paymentService(null).voucherCode(null).build();
+            payment.setStatus(PaymentStatusEnum.SELECTING_PAYMENT);
+            payment.setPointAmount(new BigDecimal(0.00));
+            payment.setPaymentService(null);
+            payment.setVoucherCode(null);
+
+            transactionService.setPaymentInTransaction(payment.getTransactionId(), payment);
+        }
     }
 
 }

@@ -68,10 +68,19 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public void setPaymentInTransaction(UUID id, Payment payment) {
-        log.info("setPaymentInTransaction is running with transaction id : " + id.toString());
-        TransactionDto transactionDto = TransactionDto.builder().id(id).paymentStatus(payment.getStatus())
-                .paymentId(payment.getId()).pointAmount(payment.getPointAmount())
-                .paymentServiceId(payment.getPaymentService().getId()).voucherCode(payment.getVoucherCode()).build();
+        log.info("setPaymentInTransaction is running with transaction is -> {}", id);
+        TransactionDto transactionDto;
+        if (payment.getPaymentService() != null) {
+            transactionDto = TransactionDto.builder().id(id).paymentStatus(payment.getStatus())
+                    .paymentId(payment.getId()).pointAmount(payment.getPointAmount())
+                    .paymentServiceId(payment.getPaymentService().getId())
+                    .voucherCode(payment.getVoucherCode()).build();
+        } else {
+            transactionDto = TransactionDto.builder().id(id).paymentStatus(payment.getStatus())
+                    .paymentId(null).pointAmount(payment.getPointAmount())
+                    .voucherCode(payment.getVoucherCode()).build();
+        }
+
         jmsTemplate.convertAndSend(JmsConfig.SET_PAYMENT_IN_TRANSACTION_BY_ID, new TransactionEvent(transactionDto));
     }
 

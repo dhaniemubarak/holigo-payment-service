@@ -15,4 +15,6 @@ public interface PaymentVirtualAccountService {
 
     StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> paymentHasBeenPaid(UUID id);
 
+    StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> cancelPayment(UUID id);
+
 }
