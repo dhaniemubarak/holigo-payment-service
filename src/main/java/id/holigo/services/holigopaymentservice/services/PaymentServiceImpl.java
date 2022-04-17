@@ -79,10 +79,16 @@ public class PaymentServiceImpl implements PaymentService {
                     LocaleContextHolder.getLocale()));
         }
 
-        if (transactionDto.getPaymentStatus() != PaymentStatusEnum.SELECTING_PAYMENT) {
+        if (transactionDto.getPaymentStatus() != PaymentStatusEnum.SELECTING_PAYMENT
+                && transactionDto.getPaymentStatus() != PaymentStatusEnum.WAITING_PAYMENT) {
             String message = statusPaymentService.getStatusMessage(transactionDto.getPaymentStatus());
 
             throw new ForbiddenException(message);
+        }
+
+        if (transactionDto.getPaymentStatus() == PaymentStatusEnum.WAITING_PAYMENT) {
+            Payment waitingPayment = paymentRepository.getById(transactionDto.getPaymentId());
+            cancelPayment(waitingPayment);
         }
 
         // Cek apakah layanan pembayaran dibuka atau di tutup untuk produk yang mau
@@ -133,12 +139,13 @@ public class PaymentServiceImpl implements PaymentService {
                  * Untuk sementara batalkan terlebih dahulu jika ditemukan payment
                  * yang sudah ada. Untuk memastikan pembayaran via virtual account
                  * hanya bisa 1 pembayaran yang statusnya menunggu
-                 * 
+                 *
                  */
                 List<Payment> payments = paymentRepository.findAllByUserIdAndStatusAndPaymentServiceId(
                         payment.getUserId(), PaymentStatusEnum.WAITING_PAYMENT, payment.getPaymentService().getId());
-                cancelPayment(payments);
-
+                for (Payment pay : payments) {
+                    cancelPayment(pay);
+                }
                 PaymentVirtualAccount paymentVirtualAccount = paymentVirtualAccountService
                         .createNewVirtualAccount(transactionDto, payment);
                 detailType = "virtualAccount";
@@ -183,7 +190,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private void sendEvent(UUID id,
-            StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm, PaymentStatusEvent event) {
+                           StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm, PaymentStatusEvent event) {
         Message<PaymentStatusEvent> message = MessageBuilder.withPayload(event)
                 .setHeader(PAYMENT_HEADER, id).build();
         sm.sendEvent(message);
@@ -206,32 +213,30 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Transactional
-    private void cancelPayment(List<Payment> payments) {
-        log.info("LIST OF PAYMENTS -> {}", payments);
-        for (Payment payment : payments) {
-            payment.setDeletedAt(Timestamp.valueOf(LocalDateTime.now()));
-            payment.setStatus(PaymentStatusEnum.PAYMENT_CANCELED);
-            paymentRepository.save(payment);
-            // Refund point yang di gunakan
-            switch (payment.getDetailType()) {
-                case "virtualAccount":
-                    paymentVirtualAccountService.cancelPayment(UUID.fromString(payment.getDetailId()));
-                    break;
-                case "bankTransfer":
-                    break;
+    @Override
+    public void cancelPayment(Payment payment) {
+        payment.setDeletedAt(Timestamp.valueOf(LocalDateTime.now()));
+        payment.setStatus(PaymentStatusEnum.PAYMENT_CANCELED);
+        Payment updatedPayment = paymentRepository.save(payment);
+        // Refund point yang digunakan
+        // Refund voucher yang digunakan
+        switch (payment.getDetailType()) {
+            case "virtualAccount":
+                paymentVirtualAccountService.cancelPayment(UUID.fromString(payment.getDetailId()));
+                break;
+            case "bankTransfer":
+                paymentBankTransferService.cancelPayment(UUID.fromString(payment.getDetailId()));
+                break;
 
-            }
-            // Payment newPayment =
-            // Payment.builder().id(null).status(PaymentStatusEnum.SELECTING_PAYMENT)
-            // .pointAmount(new
-            // BigDecimal(0.00)).paymentService(null).voucherCode(null).build();
-            payment.setStatus(PaymentStatusEnum.SELECTING_PAYMENT);
-            payment.setPointAmount(new BigDecimal(0.00));
-            payment.setPaymentService(null);
-            payment.setVoucherCode(null);
-
-            transactionService.setPaymentInTransaction(payment.getTransactionId(), payment);
         }
+        Payment pay = new Payment();
+        pay.setId(updatedPayment.getId());
+        pay.setStatus(PaymentStatusEnum.SELECTING_PAYMENT);
+        pay.setPointAmount(new BigDecimal(0.00));
+        pay.setVoucherCode(null);
+        pay.setPaymentService(null);
+        transactionService.setPaymentInTransaction(payment.getTransactionId(), pay);
+//        }
     }
 
 }

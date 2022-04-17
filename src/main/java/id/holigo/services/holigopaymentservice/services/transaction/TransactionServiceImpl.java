@@ -77,7 +77,7 @@ public class TransactionServiceImpl implements TransactionService {
                     .voucherCode(payment.getVoucherCode()).build();
         } else {
             transactionDto = TransactionDto.builder().id(id).paymentStatus(payment.getStatus())
-                    .paymentId(null).pointAmount(payment.getPointAmount())
+                    .pointAmount(payment.getPointAmount())
                     .voucherCode(payment.getVoucherCode()).build();
         }
 

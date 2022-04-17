@@ -46,8 +46,15 @@ public class PaymentBankTransferServiceImpl implements PaymentBankTransferServic
         return sm;
     }
 
+    @Override
+    public StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> cancelPayment(UUID id) {
+        StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> sm = build(id);
+        sendEvent(id, sm, PaymentBankTransferEvent.PAYMENT_CANCELED);
+        return sm;
+    }
+
     private void sendEvent(UUID id,
-            StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> sm, PaymentBankTransferEvent event) {
+                           StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> sm, PaymentBankTransferEvent event) {
         Message<PaymentBankTransferEvent> message = MessageBuilder.withPayload(event)
                 .setHeader(PAYMENT_BANK_TRANSFER_HEADER, id).build();
         sm.sendEvent(message);
@@ -71,7 +78,7 @@ public class PaymentBankTransferServiceImpl implements PaymentBankTransferServic
 
     @Override
     public PaymentBankTransfer createNewBankTransfer(TransactionDto transactionDto,
-            Payment payment) {
+                                                     Payment payment) {
         BigDecimal serviceFeeAmount = BigDecimal.valueOf(0.00);
         BigDecimal paymentServiceAmount = BigDecimal.valueOf(0.00);
         BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());

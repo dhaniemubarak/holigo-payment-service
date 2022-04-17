@@ -61,7 +61,9 @@ public class PaymentBankTransferSMConfig
 
         transitions.withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
                 .target(PaymentStatusEnum.PAID).action(paymentPaidAction())
-                .event(PaymentBankTransferEvent.PAYMENT_PAID);
+                .event(PaymentBankTransferEvent.PAYMENT_PAID)
+                .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
+                .target(PaymentStatusEnum.PAYMENT_CANCELED).event(PaymentBankTransferEvent.PAYMENT_CANCELED);
     }
 
     @Override
@@ -70,7 +72,7 @@ public class PaymentBankTransferSMConfig
         StateMachineListenerAdapter<PaymentStatusEnum, PaymentBankTransferEvent> adapter = new StateMachineListenerAdapter<>() {
             @Override
             public void stateChanged(State<PaymentStatusEnum, PaymentBankTransferEvent> from,
-                    State<PaymentStatusEnum, PaymentBankTransferEvent> to) {
+                                     State<PaymentStatusEnum, PaymentBankTransferEvent> to) {
                 log.info(String.format("stateChange(from: %s, to %s)", from, to));
             }
         };
@@ -106,7 +108,7 @@ public class PaymentBankTransferSMConfig
         sm.stop();
         sm.getStateMachineAccessor().doWithAllRegions(sma -> {
             sma.addStateMachineInterceptor(paymentInterceptor);
-            sma.resetStateMachine(new DefaultStateMachineContext<PaymentStatusEnum, PaymentStatusEvent>(
+            sma.resetStateMachine(new DefaultStateMachineContext<>(
                     payment.getStatus(), null, null, null));
         });
         sm.start();

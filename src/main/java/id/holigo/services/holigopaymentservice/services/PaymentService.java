@@ -1,5 +1,6 @@
 package id.holigo.services.holigopaymentservice.services;
 
+import java.util.List;
 import java.util.UUID;
 
 import javax.jms.JMSException;
@@ -17,4 +18,6 @@ public interface PaymentService {
     Payment createPayment(Payment payment) throws JsonMappingException, JsonProcessingException, JMSException;
 
     StateMachine<PaymentStatusEnum, PaymentStatusEvent> paymentHasBeenPaid(UUID id);
+
+    void cancelPayment(Payment payment);
 }

@@ -15,4 +15,6 @@ public interface PaymentBankTransferService {
     PaymentBankTransfer createNewBankTransfer(TransactionDto transactionDto, Payment payment);
 
     StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> paymentHasBeenPaid(UUID id);
+
+    StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> cancelPayment(UUID id);
 }
