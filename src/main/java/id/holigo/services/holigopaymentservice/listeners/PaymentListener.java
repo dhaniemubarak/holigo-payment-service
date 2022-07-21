@@ -20,10 +20,8 @@ import id.holigo.services.holigopaymentservice.repositories.PaymentVirtualAccoun
 import id.holigo.services.holigopaymentservice.services.BankTransferCallbackService;
 import id.holigo.services.holigopaymentservice.services.VirtualAccountCallbackService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
-@Slf4j
 @Component
 public class PaymentListener {
 
@@ -45,12 +43,10 @@ public class PaymentListener {
     @Transactional
     @JmsListener(destination = JmsConfig.UPDATE_PAYMENT_STATUS_BY_PAYMENT_ID)
     public void listenForUpdatePaymentStatus(TransactionEvent transactionEvent) {
-        log.info("listenForUpdatePaymentStatus is running...");
-        log.info("transactionDto -> {}", transactionEvent.getTransactionDto());
         TransactionDto transactionDto = transactionEvent.getTransactionDto();
         Payment payment = paymentRepository.getById(transactionDto.getPaymentId());
         switch (payment.getDetailType()) {
-            case "bankTransfer":
+            case "bankTransfer" -> {
                 PaymentBankTransfer paymentBankTransfer = paymentBankTransferRepository
                         .getById(UUID.fromString(payment.getDetailId()));
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED)) {
@@ -59,8 +55,8 @@ public class PaymentListener {
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED_FAILED)) {
                     bankTransferCallbackService.failedTransaction(paymentBankTransfer.getCallbackId());
                 }
-                break;
-            case "virtualAccount":
+            }
+            case "virtualAccount" -> {
                 PaymentVirtualAccount paymentVirtualAccount = paymentVirtualAccountRepository
                         .getById(UUID.fromString(payment.getDetailId()));
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED)) {
@@ -69,7 +65,7 @@ public class PaymentListener {
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED_FAILED)) {
                     virtualAccountCallbackService.failedTransaction(paymentVirtualAccount.getCallbackId());
                 }
-                break;
+            }
         }
 
     }

@@ -49,8 +49,9 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
     public void configure(StateMachineTransitionConfigurer<PaymentStatusEnum, PaymentStatusEvent> transitions)
             throws Exception {
         transitions.withExternal().source(PaymentStatusEnum.WAITING_PAYMENT).target(PaymentStatusEnum.PAID)
-                .action(paidAction())
-                .event(PaymentStatusEvent.PAYMENT_PAID);
+                .event(PaymentStatusEvent.PAYMENT_PAID).action(paidAction())
+                .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT).target(PaymentStatusEnum.PAYMENT_EXPIRED)
+                .event(PaymentStatusEvent.PAYMENT_EXPIRED);
     }
 
     @Override
@@ -59,7 +60,7 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
         StateMachineListenerAdapter<PaymentStatusEnum, PaymentStatusEvent> adapter = new StateMachineListenerAdapter<>() {
             @Override
             public void stateChanged(State<PaymentStatusEnum, PaymentStatusEvent> from,
-                    State<PaymentStatusEnum, PaymentStatusEvent> to) {
+                                     State<PaymentStatusEnum, PaymentStatusEvent> to) {
                 log.info(String.format("stateChange(from: %s, to %s)", from, to));
             }
         };

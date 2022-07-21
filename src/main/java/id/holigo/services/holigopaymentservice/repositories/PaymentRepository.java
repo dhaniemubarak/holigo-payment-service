@@ -14,5 +14,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     Optional<Payment> findByDetailTypeAndDetailId(String detailType, String detailId);
 
     List<Payment> findAllByUserIdAndStatusAndPaymentServiceId(Long userId, PaymentStatusEnum status,
-            String paymentServiceId);
+                                                              String paymentServiceId);
+
+    List<Payment> findAllByTransactionIdAndStatus(UUID transactionId, PaymentStatusEnum status);
 }

@@ -10,7 +10,6 @@ import javax.jms.JMSException;
 import javax.transaction.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -33,9 +32,7 @@ import id.holigo.services.holigopaymentservice.services.transaction.TransactionS
 import id.holigo.services.holigopaymentservice.web.exceptions.ForbiddenException;
 import id.holigo.services.holigopaymentservice.web.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @RequiredArgsConstructor
 @Service
 public class PaymentServiceImpl implements PaymentService {
@@ -65,7 +62,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentInterceptor paymentInterceptor;
 
     @Override
-    public Payment createPayment(Payment payment) throws JsonMappingException, JsonProcessingException, JMSException {
+    public Payment createPayment(Payment payment) throws JsonProcessingException, JMSException {
 
         TransactionDto transactionDto = transactionService.getTransaction(payment.getTransactionId());
 
@@ -109,13 +106,10 @@ public class PaymentServiceImpl implements PaymentService {
         BigDecimal serviceFeeAmount = BigDecimal.valueOf(0.00);
         BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());
         BigDecimal remainingAmount = paymentServiceAmount;
-        String detailType = null;
+        String detailType;
         String detailId = UUID.randomUUID().toString();
         switch (payment.getPaymentService().getId()) {
-            case "BT_BCA":
-            case "BT_MANDIRI":
-            case "BT_BNI":
-            case "BT_BSI":
+            case "BT_BCA", "BT_MANDIRI", "BT_BNI", "BT_BSI" -> {
                 PaymentBankTransfer paymentBankTransfer = paymentBankTransferService
                         .createNewBankTransfer(transactionDto, payment);
                 detailType = "bankTransfer";
@@ -124,22 +118,18 @@ public class PaymentServiceImpl implements PaymentService {
                 remainingAmount = paymentBankTransfer.getBillAmount();
                 serviceFeeAmount = paymentBankTransfer.getServiceFeeAmount();
                 totalAmount = paymentBankTransfer.getTotalAmount();
-                break;
-            case "VA_BCA":
-            case "VA_MANDIRI":
-            case "VA_BNI":
-                log.info("MASUK VA");
+            }
+            case "VA_BCA", "VA_MANDIRI", "VA_BNI" -> {
 
-                /**
-                 * Jika memilih virtual account, pastikan tagihan virtual account yang aktif
-                 * pada metode pembayaran virtual account dengan bank yang dipilih
-                 * untuk user tersebut hanya satu. Maka lakukan validasi terlebih dahulu
-                 */
-                /**
-                 * Untuk sementara batalkan terlebih dahulu jika ditemukan payment
-                 * yang sudah ada. Untuk memastikan pembayaran via virtual account
-                 * hanya bisa 1 pembayaran yang statusnya menunggu
-                 *
+                /*
+                  Jika memilih virtual account, pastikan tagihan virtual account yang aktif
+                  pada metode pembayaran virtual account dengan bank yang dipilih
+                  untuk user tersebut hanya satu. Maka lakukan validasi terlebih dahulu
+
+                  Untuk sementara batalkan terlebih dahulu jika ditemukan payment
+                  yang sudah ada. Untuk memastikan pembayaran via virtual account
+                  hanya bisa 1 pembayaran yang statusnya menunggu
+
                  */
                 List<Payment> payments = paymentRepository.findAllByUserIdAndStatusAndPaymentServiceId(
                         payment.getUserId(), PaymentStatusEnum.WAITING_PAYMENT, payment.getPaymentService().getId());
@@ -154,13 +144,9 @@ public class PaymentServiceImpl implements PaymentService {
                 remainingAmount = paymentVirtualAccount.getBillAmount();
                 serviceFeeAmount = paymentVirtualAccount.getServiceFeeAmount();
                 totalAmount = paymentVirtualAccount.getTotalAmount();
-                break;
-            case "CC_ALL":
-                detailType = "creditCard";
-                break;
-            default:
-                detailType = "undefined";
-                break;
+            }
+            case "CC_ALL" -> detailType = "creditCard";
+            default -> detailType = "undefined";
         }
 
         // Set payment
@@ -189,6 +175,15 @@ public class PaymentServiceImpl implements PaymentService {
         return sm;
     }
 
+    @Transactional
+    @Override
+    public StateMachine<PaymentStatusEnum, PaymentStatusEvent> paymentExpired(UUID id) {
+        StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(id);
+        sendEvent(id, sm, PaymentStatusEvent.PAYMENT_EXPIRED);
+        return sm;
+    }
+
+
     private void sendEvent(UUID id,
                            StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm, PaymentStatusEvent event) {
         Message<PaymentStatusEvent> message = MessageBuilder.withPayload(event)
@@ -205,7 +200,7 @@ public class PaymentServiceImpl implements PaymentService {
         sm.stop();
         sm.getStateMachineAccessor().doWithAllRegions(sma -> {
             sma.addStateMachineInterceptor(paymentInterceptor);
-            sma.resetStateMachine(new DefaultStateMachineContext<PaymentStatusEnum, PaymentStatusEvent>(
+            sma.resetStateMachine(new DefaultStateMachineContext<>(
                     payment.getStatus(), null, null, null));
         });
         sm.start();
@@ -221,18 +216,13 @@ public class PaymentServiceImpl implements PaymentService {
         // Refund point yang digunakan
         // Refund voucher yang digunakan
         switch (payment.getDetailType()) {
-            case "virtualAccount":
-                paymentVirtualAccountService.cancelPayment(UUID.fromString(payment.getDetailId()));
-                break;
-            case "bankTransfer":
-                paymentBankTransferService.cancelPayment(UUID.fromString(payment.getDetailId()));
-                break;
-
+            case "virtualAccount" -> paymentVirtualAccountService.cancelPayment(UUID.fromString(payment.getDetailId()));
+            case "bankTransfer" -> paymentBankTransferService.cancelPayment(UUID.fromString(payment.getDetailId()));
         }
         Payment pay = new Payment();
         pay.setId(updatedPayment.getId());
         pay.setStatus(PaymentStatusEnum.SELECTING_PAYMENT);
-        pay.setPointAmount(new BigDecimal(0.00));
+        pay.setPointAmount(new BigDecimal("0.00"));
         pay.setVoucherCode(null);
         pay.setPaymentService(null);
         transactionService.setPaymentInTransaction(payment.getTransactionId(), pay);
