@@ -22,10 +22,8 @@ import lombok.RequiredArgsConstructor;
 @RestController
 public class PaymentVirtualAccountController {
 
-    @Autowired
     private final PaymentVirtualAccountMapper paymentVirtualAccountMapper;
 
-    @Autowired
     private final PaymentVirtualAccountRepository paymentVirtualAccountRepository;
 
     @GetMapping("/api/v1/paymentVirtualAccounts")
@@ -34,11 +32,8 @@ public class PaymentVirtualAccountController {
         Optional<PaymentVirtualAccount> fetchPaymentVirtualAccount = paymentVirtualAccountRepository
                 .findByAccountNumberAndStatus(accountNumber, PaymentStatusEnum.WAITING_PAYMENT);
 
-        if (fetchPaymentVirtualAccount.isPresent()) {
-            return new ResponseEntity<>(paymentVirtualAccountMapper
-                    .paymentVirtualAccountToPaymentVirtualAccountDto(fetchPaymentVirtualAccount.get(), false, false),
-                    HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        return fetchPaymentVirtualAccount.map(paymentVirtualAccount -> new ResponseEntity<>(paymentVirtualAccountMapper
+                .paymentVirtualAccountToPaymentVirtualAccountDto(paymentVirtualAccount, false, false),
+                HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 }

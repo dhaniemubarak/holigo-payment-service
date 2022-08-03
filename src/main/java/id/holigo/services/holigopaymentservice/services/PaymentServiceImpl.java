@@ -177,10 +177,15 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Transactional
     @Override
-    public StateMachine<PaymentStatusEnum, PaymentStatusEvent> paymentExpired(UUID id) {
+    public void paymentExpired(UUID id) {
         StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(id);
         sendEvent(id, sm, PaymentStatusEvent.PAYMENT_EXPIRED);
-        return sm;
+    }
+
+    @Override
+    public void paymentCanceled(UUID id) {
+        StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(id);
+        sendEvent(id, sm, PaymentStatusEvent.PAYMENT_CANCEL);
     }
 
 

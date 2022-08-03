@@ -17,7 +17,9 @@ public interface PaymentService {
 
     StateMachine<PaymentStatusEnum, PaymentStatusEvent> paymentHasBeenPaid(UUID id);
 
-    StateMachine<PaymentStatusEnum, PaymentStatusEvent> paymentExpired(UUID id);
+    void paymentExpired(UUID id);
+
+    void paymentCanceled(UUID id);
 
     void cancelPayment(Payment payment);
 }

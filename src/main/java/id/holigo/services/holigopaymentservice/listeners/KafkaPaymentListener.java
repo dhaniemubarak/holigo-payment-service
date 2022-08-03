@@ -36,4 +36,20 @@ public class KafkaPaymentListener {
             }
         });
     }
+
+    @KafkaListener(topics = KafkaTopicConfig.CANCEL_PAYMENT, groupId = "cancel-payment", containerFactory = "paymentListenerContainerFactory")
+    void listenForCancel(PaymentDto paymentDto) {
+        transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+            @Override
+            protected void doInTransactionWithoutResult(@Nullable TransactionStatus status) {
+                log.info("listenForCancel is running ...");
+                List<Payment> payments = paymentRepository.findAllByTransactionId(paymentDto.getTransactionId());
+                payments.forEach(payment -> {
+                    if (payment.getStatus() != PaymentStatusEnum.PAID) {
+                        paymentService.paymentCanceled(payment.getId());
+                    }
+                });
+            }
+        });
+    }
 }
