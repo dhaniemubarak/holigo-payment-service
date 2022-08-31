@@ -34,25 +34,23 @@ public class TransactionServiceImpl implements TransactionService {
     private final ObjectMapper objectMapper;
 
     @Override
-    public TransactionDto getTransaction(UUID id) throws JsonMappingException, JsonProcessingException, JMSException {
+    public TransactionDto getTransaction(UUID id) throws JsonProcessingException, JMSException {
         log.info("getTransaction is running....");
         TransactionDto transactionDto = TransactionDto.builder().id(id).build();
-        Message received = jmsTemplate.sendAndReceive(JmsConfig.GET_TRANSACTION_BY_ID, new MessageCreator() {
-            @Override
-            public Message createMessage(Session session) throws JMSException {
-                log.info("getTransaction creating message is running....");
-                Message message = null;
-                try {
-                    message = session.createTextMessage(objectMapper.writeValueAsString(transactionDto));
-                } catch (JsonProcessingException e) {
-                    log.error("Error : " + e.getMessage());
-                    throw new JMSException(e.getMessage());
-                }
-                message.setStringProperty("_type", "id.holigo.services.common.model.TransactionDto");
-                return message;
+        Message received = jmsTemplate.sendAndReceive(JmsConfig.GET_TRANSACTION_BY_ID, session -> {
+            log.info("getTransaction creating message is running....");
+            Message message;
+            try {
+                message = session.createTextMessage(objectMapper.writeValueAsString(transactionDto));
+            } catch (JsonProcessingException e) {
+                log.error("Error : " + e.getMessage());
+                throw new JMSException(e.getMessage());
             }
+            message.setStringProperty("_type", "id.holigo.services.common.model.TransactionDto");
+            return message;
         });
         log.info("Finish send ....");
+        assert received != null;
         TransactionDto result = objectMapper.readValue(received.getBody(String.class), TransactionDto.class);
         log.info("Result -> {}", result);
         return result;
@@ -74,11 +72,11 @@ public class TransactionServiceImpl implements TransactionService {
             transactionDto = TransactionDto.builder().id(id).paymentStatus(payment.getStatus())
                     .paymentId(payment.getId()).pointAmount(payment.getPointAmount())
                     .paymentServiceId(payment.getPaymentService().getId())
-                    .voucherCode(payment.getVoucherCode()).build();
+                    .voucherCode(payment.getCouponCode()).build();
         } else {
             transactionDto = TransactionDto.builder().id(id).paymentStatus(payment.getStatus())
                     .pointAmount(payment.getPointAmount())
-                    .voucherCode(payment.getVoucherCode()).build();
+                    .voucherCode(payment.getCouponCode()).build();
         }
 
         jmsTemplate.convertAndSend(JmsConfig.SET_PAYMENT_IN_TRANSACTION_BY_ID, new TransactionEvent(transactionDto));

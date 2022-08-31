@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RequestPaymentDto implements Serializable {
-    
+
     static final long serialVersionUID = -155181210L;
 
     private String paymentServiceId;
@@ -25,5 +25,5 @@ public class RequestPaymentDto implements Serializable {
 
     private String pin;
 
-    private String voucherCode;
+    private String couponCode;
 }

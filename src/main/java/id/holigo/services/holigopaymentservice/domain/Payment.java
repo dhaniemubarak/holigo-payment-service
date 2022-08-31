@@ -40,7 +40,7 @@ public class Payment {
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID id;
 
-    @Column(length = 36, columnDefinition = "varchar(36)", nullable = true)
+    @Column(length = 36, columnDefinition = "varchar(36)")
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID transactionId;
 
@@ -69,6 +69,10 @@ public class Payment {
 
     private Boolean isSplitBill;
 
+    private Boolean isFreeServiceFee = false;
+
+    private Boolean isFreeAdmin = false;
+
     @Column(precision = 10, scale = 2, nullable = false, columnDefinition = "decimal(10,2) default 0")
     private BigDecimal pointAmount;
 
@@ -78,10 +82,8 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     private PaymentStatusEnum status;
 
-    @Column(nullable = true)
     private String verifyType;
 
-    @Column(nullable = true)
     private String verifyId;
 
     private String detailType;
@@ -95,10 +97,11 @@ public class Payment {
     @UpdateTimestamp
     private Timestamp updatedAt;
 
-    @Column(nullable = true)
     private Timestamp deletedAt;
 
-    private String voucherCode;
+    private String couponCode;
+
+    private BigDecimal couponValueAmount;
 
     @Transient
     private String pin;

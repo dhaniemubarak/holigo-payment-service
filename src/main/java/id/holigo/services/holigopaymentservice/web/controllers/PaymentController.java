@@ -70,12 +70,15 @@ public class PaymentController {
 
     @PostMapping("/api/v1/payments")
     public ResponseEntity<HttpStatus> createPayment(@Valid @RequestBody RequestPaymentDto requestPaymentDto,
-            @RequestHeader("user-id") Long userId) throws JsonMappingException, JsonProcessingException, JMSException {
+            @RequestHeader("user-id") Long userId) throws JsonProcessingException, JMSException {
         Optional<id.holigo.services.holigopaymentservice.domain.PaymentService> fetchPaymentService = paymentServiceRepository
                 .findById(requestPaymentDto.getPaymentServiceId());
         if (fetchPaymentService.isEmpty()) {
             throw new NotFoundException("Payment method not found");
         }
+
+        // Get coupon value
+
         Payment payment = paymentMapper.requestPaymentDtoToPayment(requestPaymentDto);
         payment.setPaymentService(fetchPaymentService.get());
         payment.setUserId(userId);
@@ -83,7 +86,7 @@ public class PaymentController {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setLocation(
                 UriComponentsBuilder.fromPath("/api/v1/payments/{id}").buildAndExpand(savedPayment.getId()).toUri());
-        return new ResponseEntity<HttpStatus>(httpHeaders, HttpStatus.CREATED);
+        return new ResponseEntity<>(httpHeaders, HttpStatus.CREATED);
     }
 
     @GetMapping("/api/v1/payments/{id}")
@@ -104,7 +107,7 @@ public class PaymentController {
             @PathVariable("detailId") UUID detailId) {
         ResponseEntity<?> response;
         switch (paymentService) {
-            case "bankTransfer":
+            case "bankTransfer" -> {
                 log.info("bank transfer is running with id -> {}", detailId);
                 Optional<PaymentBankTransfer> fetchPaymentBankTransfer = paymentBankTransferRepository
                         .findById(detailId);
@@ -113,8 +116,8 @@ public class PaymentController {
                 }
                 response = new ResponseEntity<>(paymentBankTransferMapper
                         .paymentBankTransferToPaymentBankTransferDto(fetchPaymentBankTransfer.get()), HttpStatus.OK);
-                break;
-            case "virtualAccount":
+            }
+            case "virtualAccount" -> {
                 Optional<PaymentVirtualAccount> fetchPaymentVirtualAccount = paymentVirtualAccountRepository
                         .findById(detailId);
                 if (fetchPaymentVirtualAccount.isEmpty()) {
@@ -123,10 +126,8 @@ public class PaymentController {
                 response = new ResponseEntity<>(paymentVirtualAccountMapper
                         .paymentVirtualAccountToPaymentVirtualAccountDto(fetchPaymentVirtualAccount.get(), true, true),
                         HttpStatus.OK);
-                break;
-            default:
-                response = new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                break;
+            }
+            default -> response = new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         return response;
     }
