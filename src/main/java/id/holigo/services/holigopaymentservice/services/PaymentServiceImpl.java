@@ -228,7 +228,7 @@ public class PaymentServiceImpl implements PaymentService {
         pay.setId(updatedPayment.getId());
         pay.setStatus(PaymentStatusEnum.SELECTING_PAYMENT);
         pay.setPointAmount(new BigDecimal("0.00"));
-        pay.setVoucherCode(null);
+        pay.setCouponCode(null);
         pay.setPaymentService(null);
         transactionService.setPaymentInTransaction(payment.getTransactionId(), pay);
 //        }

@@ -1,5 +1,6 @@
 package id.holigo.services.holigopaymentservice.web.controllers;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -7,8 +8,9 @@ import javax.jms.JMSException;
 import javax.validation.Valid;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 
+import id.holigo.services.common.model.ApplyCouponDto;
+import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -36,37 +38,74 @@ import id.holigo.services.holigopaymentservice.web.mappers.PaymentBankTransferMa
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentMapper;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentVirtualAccountMapper;
 import id.holigo.services.holigopaymentservice.web.model.RequestPaymentDto;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RequiredArgsConstructor
 @RestController
 public class PaymentController {
 
-    @Autowired
-    private final PaymentMapper paymentMapper;
+    private PaymentMapper paymentMapper;
+
+    private PaymentService paymentService;
+
+    private PaymentRepository paymentRepository;
+
+    private PaymentBankTransferRepository paymentBankTransferRepository;
+
+    private PaymentVirtualAccountRepository paymentVirtualAccountRepository;
+
+    private PaymentBankTransferMapper paymentBankTransferMapper;
+
+    private PaymentVirtualAccountMapper paymentVirtualAccountMapper;
+
+    private PaymentServiceRepository paymentServiceRepository;
+
+    private CouponService couponService;
 
     @Autowired
-    private final PaymentService paymentService;
+    public void setCouponService(CouponService couponService) {
+        this.couponService = couponService;
+    }
 
     @Autowired
-    private final PaymentRepository paymentRepository;
+    public void setPaymentBankTransferMapper(PaymentBankTransferMapper paymentBankTransferMapper) {
+        this.paymentBankTransferMapper = paymentBankTransferMapper;
+    }
 
     @Autowired
-    private final PaymentBankTransferRepository paymentBankTransferRepository;
+    public void setPaymentBankTransferRepository(PaymentBankTransferRepository paymentBankTransferRepository) {
+        this.paymentBankTransferRepository = paymentBankTransferRepository;
+    }
 
     @Autowired
-    private final PaymentVirtualAccountRepository paymentVirtualAccountRepository;
+    public void setPaymentMapper(PaymentMapper paymentMapper) {
+        this.paymentMapper = paymentMapper;
+    }
 
     @Autowired
-    private final PaymentBankTransferMapper paymentBankTransferMapper;
+    public void setPaymentRepository(PaymentRepository paymentRepository) {
+        this.paymentRepository = paymentRepository;
+    }
 
     @Autowired
-    private final PaymentVirtualAccountMapper paymentVirtualAccountMapper;
+    public void setPaymentService(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
 
     @Autowired
-    private final PaymentServiceRepository paymentServiceRepository;
+    public void setPaymentVirtualAccountRepository(PaymentVirtualAccountRepository paymentVirtualAccountRepository) {
+        this.paymentVirtualAccountRepository = paymentVirtualAccountRepository;
+    }
+
+    @Autowired
+    public void setPaymentServiceRepository(PaymentServiceRepository paymentServiceRepository) {
+        this.paymentServiceRepository = paymentServiceRepository;
+    }
+
+    @Autowired
+    public void setPaymentVirtualAccountMapper(PaymentVirtualAccountMapper paymentVirtualAccountMapper) {
+        this.paymentVirtualAccountMapper = paymentVirtualAccountMapper;
+    }
 
     @PostMapping("/api/v1/payments")
     public ResponseEntity<HttpStatus> createPayment(@Valid @RequestBody RequestPaymentDto requestPaymentDto,
@@ -77,11 +116,23 @@ public class PaymentController {
             throw new NotFoundException("Payment method not found");
         }
 
-        // Get coupon value
-
         Payment payment = paymentMapper.requestPaymentDtoToPayment(requestPaymentDto);
         payment.setPaymentService(fetchPaymentService.get());
         payment.setUserId(userId);
+        // Get coupon value
+        ApplyCouponDto applyCouponDto = couponService.applyCoupon(requestPaymentDto.getTransactionId(), requestPaymentDto.getCouponCode(),
+                requestPaymentDto.getPaymentServiceId(),userId);
+        if(applyCouponDto.getIsValid()){
+            // POST coupon
+
+            payment.setIsFreeAdmin(applyCouponDto.getIsFreeAdmin());
+            payment.setIsFreeServiceFee(applyCouponDto.getIsFreeServiceFee());
+            if(applyCouponDto.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0){
+                payment.setDiscountAmount(applyCouponDto.getDiscountAmount());
+            }
+        }
+
+
         Payment savedPayment = paymentService.createPayment(payment);
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setLocation(
