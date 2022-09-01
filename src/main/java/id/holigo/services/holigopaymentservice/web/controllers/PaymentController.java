@@ -109,7 +109,7 @@ public class PaymentController {
 
     @PostMapping("/api/v1/payments")
     public ResponseEntity<HttpStatus> createPayment(@Valid @RequestBody RequestPaymentDto requestPaymentDto,
-            @RequestHeader("user-id") Long userId) throws JsonProcessingException, JMSException {
+                                                    @RequestHeader("user-id") Long userId) throws JsonProcessingException, JMSException {
         Optional<id.holigo.services.holigopaymentservice.domain.PaymentService> fetchPaymentService = paymentServiceRepository
                 .findById(requestPaymentDto.getPaymentServiceId());
         if (fetchPaymentService.isEmpty()) {
@@ -121,13 +121,13 @@ public class PaymentController {
         payment.setUserId(userId);
         // Get coupon value
         ApplyCouponDto applyCouponDto = couponService.applyCoupon(requestPaymentDto.getTransactionId(), requestPaymentDto.getCouponCode(),
-                requestPaymentDto.getPaymentServiceId(),userId);
-        if(applyCouponDto.getIsValid()){
+                requestPaymentDto.getPaymentServiceId(), userId);
+        if (applyCouponDto.getIsValid()) {
             // POST coupon
-
+            applyCouponDto = couponService.createApplyCoupon(applyCouponDto);
             payment.setIsFreeAdmin(applyCouponDto.getIsFreeAdmin());
             payment.setIsFreeServiceFee(applyCouponDto.getIsFreeServiceFee());
-            if(applyCouponDto.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0){
+            if (applyCouponDto.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
                 payment.setDiscountAmount(applyCouponDto.getDiscountAmount());
             }
         }

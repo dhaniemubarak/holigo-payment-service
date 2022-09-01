@@ -20,4 +20,9 @@ public class CouponServiceImpl implements CouponService {
     public ApplyCouponDto applyCoupon(UUID transactionId, String couponCode, String paymentServiceId, Long userId) {
         return null;
     }
+
+    @Override
+    public ApplyCouponDto createApplyCoupon(ApplyCouponDto applyCouponDto) {
+        return null;
+    }
 }

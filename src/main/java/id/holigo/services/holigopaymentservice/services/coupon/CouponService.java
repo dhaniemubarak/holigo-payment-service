@@ -6,4 +6,5 @@ import java.util.UUID;
 
 public interface CouponService {
     ApplyCouponDto applyCoupon(UUID transactionId, String couponCode, String paymentServiceId, Long userId);
+    ApplyCouponDto createApplyCoupon(ApplyCouponDto applyCouponDto);
 }
