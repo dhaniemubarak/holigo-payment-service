@@ -1,10 +1,10 @@
 package id.holigo.services.holigopaymentservice.services;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
@@ -25,13 +25,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 public class PaymentBankTransferServiceImpl implements PaymentBankTransferService {
 
-    private final Integer min = 1;
-
-    private final Integer max = 999;
-
     public static final String PAYMENT_BANK_TRANSFER_HEADER = "payment_bank_transfer_id";
 
-    @Autowired
     private final PaymentBankTransferRepository paymentBankTransferRepository;
 
     private final StateMachineFactory<PaymentStatusEnum, PaymentBankTransferEvent> stateMachineFactory;
@@ -69,7 +64,7 @@ public class PaymentBankTransferServiceImpl implements PaymentBankTransferServic
         sm.stop();
         sm.getStateMachineAccessor().doWithAllRegions(sma -> {
             sma.addStateMachineInterceptor(paymentBankTransferInterceptor);
-            sma.resetStateMachine(new DefaultStateMachineContext<PaymentStatusEnum, PaymentBankTransferEvent>(
+            sma.resetStateMachine(new DefaultStateMachineContext<>(
                     paymentBankTransfer.getStatus(), null, null, null));
         });
         sm.start();
@@ -79,13 +74,34 @@ public class PaymentBankTransferServiceImpl implements PaymentBankTransferServic
     @Override
     public PaymentBankTransfer createNewBankTransfer(TransactionDto transactionDto,
                                                      Payment payment) {
-        BigDecimal serviceFeeAmount = BigDecimal.valueOf(0.00);
-        BigDecimal paymentServiceAmount = BigDecimal.valueOf(0.00);
+        BigDecimal serviceFeeAmount;
+        BigDecimal paymentServiceAmount;
         BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());
-        Integer uniqueCode = randomNumber();
-        serviceFeeAmount = serviceFeeAmount.add(BigDecimal.valueOf(uniqueCode));
-        paymentServiceAmount = totalAmount
-                .add(paymentServiceAmount.add(serviceFeeAmount).subtract(payment.getPointAmount()));
+
+//        long uniqueCode = randomNumber();
+//        serviceFeeAmount = BigDecimal.valueOf(uniqueCode);
+//        paymentServiceAmount = totalAmount
+//                .add(serviceFeeAmount).subtract(payment.getPointAmount());
+//        Optional<PaymentBankTransfer> fetchPaymentBankTransfer = paymentBankTransferRepository
+//                .findByPaymentServiceIdAndBillAmountAndStatus(
+//                        payment.getPaymentService().getId(),
+//                        paymentServiceAmount,
+//                        PaymentStatusEnum.WAITING_PAYMENT);
+        int uniqueCode;
+        while (true) {
+            uniqueCode = randomNumber();
+            serviceFeeAmount = BigDecimal.valueOf(uniqueCode);
+            paymentServiceAmount = totalAmount
+                    .add(serviceFeeAmount).subtract(payment.getPointAmount());
+            Optional<PaymentBankTransfer> tryFetchPaymentBankTransfer = paymentBankTransferRepository
+                    .findByPaymentServiceIdAndBillAmountAndStatus(
+                            payment.getPaymentService().getId(),
+                            paymentServiceAmount,
+                            PaymentStatusEnum.WAITING_PAYMENT);
+            if (tryFetchPaymentBankTransfer.isEmpty()) {
+                break;
+            }
+        }
         PaymentBankTransfer paymentBankTransfer = new PaymentBankTransfer();
         paymentBankTransfer.setUserId(payment.getUserId());
         paymentBankTransfer.setPaymentServiceId(payment.getPaymentService().getId());
@@ -96,11 +112,12 @@ public class PaymentBankTransferServiceImpl implements PaymentBankTransferServic
         paymentBankTransfer.setVatAmount(BigDecimal.valueOf(0));
         paymentBankTransfer.setServiceFeeAmount(serviceFeeAmount);
         paymentBankTransfer.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
-        PaymentBankTransfer savedPaymentBankTransfer = paymentBankTransferRepository.save(paymentBankTransfer);
-        return savedPaymentBankTransfer;
+        return paymentBankTransferRepository.save(paymentBankTransfer);
     }
 
     private Integer randomNumber() {
+        int min = 1;
+        int max = 99;
         return ThreadLocalRandom.current().nextInt(min, max + 1);
     }
 

@@ -11,6 +11,10 @@ import javax.transaction.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import id.holigo.services.common.model.ApplyCouponDto;
+import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
+import id.holigo.services.holigopaymentservice.web.exceptions.CouponInvalidException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -35,31 +39,63 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class PaymentServiceImpl implements PaymentService {
 
     public static final String PAYMENT_HEADER = "payment_id";
 
-    @Autowired
-    private final TransactionService transactionService;
+    private TransactionService transactionService;
 
-    @Autowired
-    private final MessageSource messageSource;
+    private MessageSource messageSource;
 
-    @Autowired
-    private final StatusPaymentService statusPaymentService;
+    private StatusPaymentService statusPaymentService;
 
-    @Autowired
-    private final PaymentRepository paymentRepository;
+    private PaymentRepository paymentRepository;
 
-    @Autowired
     private PaymentBankTransferService paymentBankTransferService;
 
-    @Autowired
     private PaymentVirtualAccountService paymentVirtualAccountService;
+
+    private CouponService couponService;
 
     private final StateMachineFactory<PaymentStatusEnum, PaymentStatusEvent> stateMachineFactory;
 
     private final PaymentInterceptor paymentInterceptor;
+
+    @Autowired
+    public void setPaymentRepository(PaymentRepository paymentRepository) {
+        this.paymentRepository = paymentRepository;
+    }
+
+    @Autowired
+    public void setMessageSource(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
+
+    @Autowired
+    public void setTransactionService(TransactionService transactionService) {
+        this.transactionService = transactionService;
+    }
+
+    @Autowired
+    public void setPaymentBankTransferService(PaymentBankTransferService paymentBankTransferService) {
+        this.paymentBankTransferService = paymentBankTransferService;
+    }
+
+    @Autowired
+    public void setPaymentVirtualAccountService(PaymentVirtualAccountService paymentVirtualAccountService) {
+        this.paymentVirtualAccountService = paymentVirtualAccountService;
+    }
+
+    @Autowired
+    public void setStatusPaymentService(StatusPaymentService statusPaymentService) {
+        this.statusPaymentService = statusPaymentService;
+    }
+
+    @Autowired
+    public void setCouponService(CouponService couponService) {
+        this.couponService = couponService;
+    }
 
     @Override
     public Payment createPayment(Payment payment) throws JsonProcessingException, JMSException {
@@ -92,6 +128,26 @@ public class PaymentServiceImpl implements PaymentService {
         // dibeli
 
         BigDecimal discountAmount = BigDecimal.valueOf(0.00);
+        if (payment.getCouponCode() != null) {
+            // Get coupon value
+            ApplyCouponDto applyCouponDto = couponService.applyCoupon(payment.getTransactionId(), payment.getCouponCode(),
+                    payment.getPaymentService().getId(), payment.getUserId());
+            if (applyCouponDto.getIsValid()) {
+                // POST coupon
+                applyCouponDto = couponService.createApplyCoupon(applyCouponDto);
+                if (applyCouponDto.getId() != null) {
+                    payment.setIsFreeAdmin(applyCouponDto.getIsFreeAdmin());
+                    payment.setIsFreeServiceFee(applyCouponDto.getIsFreeServiceFee());
+                    if (applyCouponDto.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+                        discountAmount = applyCouponDto.getDiscountAmount();
+                    }
+                    payment.setApplyCouponId(applyCouponDto.getId());
+                }
+            } else {
+                throw new CouponInvalidException(applyCouponDto.getMessage(), null, false, false);
+            }
+        }
+
         BigDecimal pointAmount = BigDecimal.valueOf(0.00);
         if (payment.getIsSplitBill()) {
             // PIN validation

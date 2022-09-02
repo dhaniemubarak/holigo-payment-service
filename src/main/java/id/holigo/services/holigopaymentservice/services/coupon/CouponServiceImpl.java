@@ -18,11 +18,11 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     public ApplyCouponDto applyCoupon(UUID transactionId, String couponCode, String paymentServiceId, Long userId) {
-        return null;
+        return couponServiceFeignClient.getApplyCoupon(transactionId, couponCode, paymentServiceId, userId).getBody();
     }
 
     @Override
     public ApplyCouponDto createApplyCoupon(ApplyCouponDto applyCouponDto) {
-        return null;
+        return couponServiceFeignClient.createApplyCoupon(applyCouponDto).getBody();
     }
 }

@@ -103,6 +103,10 @@ public class Payment {
 
     private BigDecimal couponValueAmount;
 
+    @Column(length = 36, columnDefinition = "varchar(36)", updatable = false)
+    @Type(type = "org.hibernate.type.UUIDCharType")
+    private UUID applyCouponId;
+
     @Transient
     private String pin;
 

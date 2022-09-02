@@ -1,16 +1,9 @@
 package id.holigo.services.holigopaymentservice.web.controllers;
-
-import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
-
 import javax.jms.JMSException;
 import javax.validation.Valid;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-
-import id.holigo.services.common.model.ApplyCouponDto;
-import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -22,10 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
-
 import id.holigo.services.common.model.PaymentDtoForUser;
 import id.holigo.services.holigopaymentservice.domain.Payment;
-
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
 import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 import id.holigo.services.holigopaymentservice.repositories.PaymentBankTransferRepository;
@@ -59,14 +50,6 @@ public class PaymentController {
     private PaymentVirtualAccountMapper paymentVirtualAccountMapper;
 
     private PaymentServiceRepository paymentServiceRepository;
-
-    private CouponService couponService;
-
-    @Autowired
-    public void setCouponService(CouponService couponService) {
-        this.couponService = couponService;
-    }
-
     @Autowired
     public void setPaymentBankTransferMapper(PaymentBankTransferMapper paymentBankTransferMapper) {
         this.paymentBankTransferMapper = paymentBankTransferMapper;
@@ -119,19 +102,6 @@ public class PaymentController {
         Payment payment = paymentMapper.requestPaymentDtoToPayment(requestPaymentDto);
         payment.setPaymentService(fetchPaymentService.get());
         payment.setUserId(userId);
-        // Get coupon value
-        ApplyCouponDto applyCouponDto = couponService.applyCoupon(requestPaymentDto.getTransactionId(), requestPaymentDto.getCouponCode(),
-                requestPaymentDto.getPaymentServiceId(), userId);
-        if (applyCouponDto.getIsValid()) {
-            // POST coupon
-            applyCouponDto = couponService.createApplyCoupon(applyCouponDto);
-            payment.setIsFreeAdmin(applyCouponDto.getIsFreeAdmin());
-            payment.setIsFreeServiceFee(applyCouponDto.getIsFreeServiceFee());
-            if (applyCouponDto.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
-                payment.setDiscountAmount(applyCouponDto.getDiscountAmount());
-            }
-        }
-
 
         Payment savedPayment = paymentService.createPayment(payment);
         HttpHeaders httpHeaders = new HttpHeaders();
