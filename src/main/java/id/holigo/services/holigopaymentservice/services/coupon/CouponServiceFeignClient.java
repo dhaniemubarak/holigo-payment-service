@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-@FeignClient(name = "holigo-coupon-service", url = "10.1.1.15:8114")
+@FeignClient(name = "holigo-coupon-service")
 public interface CouponServiceFeignClient {
 
     String APPLY_COUPON_URL = "/api/v1/applyCoupon";
@@ -18,6 +18,6 @@ public interface CouponServiceFeignClient {
                                                   @RequestParam("paymentServiceId") String paymentServiceId,
                                                   @RequestHeader("user-id") Long userId);
 
-    @RequestMapping(method = RequestMethod.POST, value = APPLY_COUPON_URL, consumes = "application/json")
+    @RequestMapping(method = RequestMethod.POST, value = APPLY_COUPON_URL, consumes = "application/json", produces = "application/json")
     ResponseEntity<ApplyCouponDto> createApplyCoupon(ApplyCouponDto applyCouponDto);
 }
