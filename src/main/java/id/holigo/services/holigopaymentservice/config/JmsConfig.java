@@ -16,6 +16,8 @@ public class JmsConfig {
 
     public static final String UPDATE_PAYMENT_STATUS_BY_PAYMENT_ID = "update-payment-status-by-payment-id";
 
+    public static final String CREATE_APPLY_COUPON = "create-apply-coupon";
+
     @Bean
     public MessageConverter jacksonJmsMessageConverter() {
         MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
