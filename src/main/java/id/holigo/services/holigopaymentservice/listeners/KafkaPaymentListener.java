@@ -19,7 +19,6 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Component
-@Slf4j
 public class KafkaPaymentListener {
     private final PaymentRepository paymentRepository;
     private final TransactionTemplate transactionTemplate;
@@ -42,7 +41,6 @@ public class KafkaPaymentListener {
         transactionTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             protected void doInTransactionWithoutResult(@Nullable TransactionStatus status) {
-                log.info("listenForCancel is running ...");
                 List<Payment> payments = paymentRepository.findAllByTransactionId(paymentDto.getTransactionId());
                 payments.forEach(payment -> {
                     if (payment.getStatus() != PaymentStatusEnum.PAID) {

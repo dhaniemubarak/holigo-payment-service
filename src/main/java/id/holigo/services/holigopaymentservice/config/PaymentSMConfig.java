@@ -51,7 +51,9 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
         transitions.withExternal().source(PaymentStatusEnum.WAITING_PAYMENT).target(PaymentStatusEnum.PAID)
                 .event(PaymentStatusEvent.PAYMENT_PAID).action(paidAction())
                 .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT).target(PaymentStatusEnum.PAYMENT_EXPIRED)
-                .event(PaymentStatusEvent.PAYMENT_EXPIRED);
+                .event(PaymentStatusEvent.PAYMENT_EXPIRED)
+                .and().withExternal().source(PaymentStatusEnum.PAID).target(PaymentStatusEnum.REFUNDED)
+                .event(PaymentStatusEvent.PAYMENT_REFUND);
     }
 
     @Override
