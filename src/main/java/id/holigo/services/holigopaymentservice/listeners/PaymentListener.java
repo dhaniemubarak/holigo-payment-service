@@ -2,6 +2,9 @@ package id.holigo.services.holigopaymentservice.listeners;
 
 import java.util.UUID;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import id.holigo.services.common.model.DepositDto;
+import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
@@ -21,24 +24,47 @@ import id.holigo.services.holigopaymentservice.services.BankTransferCallbackServ
 import id.holigo.services.holigopaymentservice.services.VirtualAccountCallbackService;
 import lombok.RequiredArgsConstructor;
 
+import javax.jms.JMSException;
+
 @RequiredArgsConstructor
 @Component
 public class PaymentListener {
+    private PaymentRepository paymentRepository;
+    private PaymentBankTransferRepository paymentBankTransferRepository;
+    private PaymentVirtualAccountRepository paymentVirtualAccountRepository;
+    private BankTransferCallbackService bankTransferCallbackService;
+    private VirtualAccountCallbackService virtualAccountCallbackService;
+
+    private DepositService depositService;
 
     @Autowired
-    private final PaymentRepository paymentRepository;
+    public void setDepositService(DepositService depositService) {
+        this.depositService = depositService;
+    }
 
     @Autowired
-    private final PaymentBankTransferRepository paymentBankTransferRepository;
+    public void setPaymentRepository(PaymentRepository paymentRepository) {
+        this.paymentRepository = paymentRepository;
+    }
 
     @Autowired
-    private final PaymentVirtualAccountRepository paymentVirtualAccountRepository;
+    public void setPaymentBankTransferRepository(PaymentBankTransferRepository paymentBankTransferRepository) {
+        this.paymentBankTransferRepository = paymentBankTransferRepository;
+    }
+
+    public void setPaymentVirtualAccountRepository(PaymentVirtualAccountRepository paymentVirtualAccountRepository) {
+        this.paymentVirtualAccountRepository = paymentVirtualAccountRepository;
+    }
 
     @Autowired
-    private final BankTransferCallbackService bankTransferCallbackService;
+    public void setBankTransferCallbackService(BankTransferCallbackService bankTransferCallbackService) {
+        this.bankTransferCallbackService = bankTransferCallbackService;
+    }
 
     @Autowired
-    private final VirtualAccountCallbackService virtualAccountCallbackService;
+    public void setVirtualAccountCallbackService(VirtualAccountCallbackService virtualAccountCallbackService) {
+        this.virtualAccountCallbackService = virtualAccountCallbackService;
+    }
 
     @Transactional
     @JmsListener(destination = JmsConfig.UPDATE_PAYMENT_STATUS_BY_PAYMENT_ID)
@@ -51,6 +77,25 @@ public class PaymentListener {
                         .getById(UUID.fromString(payment.getDetailId()));
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED)) {
                     bankTransferCallbackService.issuedTransaction(paymentBankTransfer.getCallbackId());
+                    DepositDto depositDto = DepositDto.builder()
+                            .creditAmount(payment.getServiceFeeAmount())
+                            .paymentId(payment.getId())
+                            .informationIndex("depositStatement.refundServiceFee")
+                            .invoiceNumber(transactionDto.getInvoiceNumber())
+                            .transactionId(transactionDto.getId())
+                            .transactionType(transactionDto.getTransactionType())
+                            .userId(transactionDto.getUserId())
+                            .build();
+                    try {
+                        DepositDto resultDepositDto = depositService.credit(depositDto);
+                        if (resultDepositDto.getIsValid()) {
+                            payment.setIsServiceFeeRefunded(resultDepositDto.getIsValid());
+                            paymentRepository.save(payment);
+                        }
+
+                    } catch (JMSException | JsonProcessingException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED_FAILED)) {
                     bankTransferCallbackService.failedTransaction(paymentBankTransfer.getCallbackId());

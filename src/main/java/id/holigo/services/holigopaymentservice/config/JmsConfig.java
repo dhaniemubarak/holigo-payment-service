@@ -18,6 +18,10 @@ public class JmsConfig {
 
     public static final String CREATE_APPLY_COUPON = "create-apply-coupon";
 
+    public static final String DEBIT_DEPOSIT = "debit-deposit";
+
+    public static final String CREDIT_DEPOSIT = "credit-deposit";
+
     @Bean
     public MessageConverter jacksonJmsMessageConverter() {
         MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
