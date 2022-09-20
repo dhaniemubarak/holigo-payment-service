@@ -59,6 +59,7 @@ public class PaymentListener {
         this.paymentBankTransferRepository = paymentBankTransferRepository;
     }
 
+    @Autowired
     public void setPaymentVirtualAccountRepository(PaymentVirtualAccountRepository paymentVirtualAccountRepository) {
         this.paymentVirtualAccountRepository = paymentVirtualAccountRepository;
     }
@@ -82,6 +83,7 @@ public class PaymentListener {
                 && payment.getStatus().equals(PaymentStatusEnum.PAID)) {
             DepositDto depositDto = DepositDto.builder()
                     .creditAmount(payment.getPaymentServiceAmount())
+                    .category("PAYMENT")
                     .paymentId(payment.getId())
                     .informationIndex("depositStatement.refundTransaction")
                     .invoiceNumber(transactionDto.getInvoiceNumber())
@@ -107,6 +109,7 @@ public class PaymentListener {
                     bankTransferCallbackService.issuedTransaction(paymentBankTransfer.getCallbackId());
                     if (!payment.getIsServiceFeeRefunded()) {
                         DepositDto depositDto = DepositDto.builder()
+                                .category("PAYMENT")
                                 .creditAmount(payment.getServiceFeeAmount())
                                 .paymentId(payment.getId())
                                 .informationIndex("depositStatement.refundServiceFee")
