@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.jms.JMSException;
@@ -12,6 +13,8 @@ import javax.transaction.Transactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import id.holigo.services.common.model.ApplyCouponDto;
+import id.holigo.services.holigopaymentservice.domain.PaymentForbidden;
+import id.holigo.services.holigopaymentservice.repositories.PaymentForbiddenRepository;
 import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
 import id.holigo.services.holigopaymentservice.web.exceptions.CouponInvalidException;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +60,13 @@ public class PaymentServiceImpl implements PaymentService {
     private PaymentVirtualAccountService paymentVirtualAccountService;
 
     private CouponService couponService;
+
+    private PaymentForbiddenRepository paymentForbiddenRepository;
+
+    @Autowired
+    public void setPaymentForbiddenRepository(PaymentForbiddenRepository paymentForbiddenRepository) {
+        this.paymentForbiddenRepository = paymentForbiddenRepository;
+    }
 
     private final StateMachineFactory<PaymentStatusEnum, PaymentStatusEvent> stateMachineFactory;
 
@@ -126,6 +136,12 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Cek apakah layanan pembayaran dibuka atau di tutup untuk produk yang mau
         // dibeli
+        Optional<PaymentForbidden> fetchPaymentForbidden = paymentForbiddenRepository
+                .findByPaymentServiceAndProductId(payment.getPaymentService(), transactionDto.getProductId());
+        if (fetchPaymentForbidden.isPresent()) {
+            throw new ForbiddenException(messageSource.getMessage("payment.forbidden_product", null,
+                    LocaleContextHolder.getLocale()));
+        }
 
         BigDecimal discountAmount = BigDecimal.valueOf(0.00);
         if (payment.getCouponCode() != null) {

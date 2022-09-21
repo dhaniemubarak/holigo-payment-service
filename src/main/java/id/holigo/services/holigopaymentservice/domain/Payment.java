@@ -47,7 +47,7 @@ public class Payment {
     private Long userId;
 
     @OneToOne
-    PaymentService paymentService;
+    private PaymentService paymentService;
 
     // @Column(columnDefinition = "varchar(10)", nullable = false)
     // private String paymentServiceId;

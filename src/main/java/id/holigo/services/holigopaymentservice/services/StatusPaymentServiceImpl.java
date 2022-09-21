@@ -19,43 +19,26 @@ public class StatusPaymentServiceImpl implements StatusPaymentService {
 
     @Override
     public String getStatusMessage(PaymentStatusEnum statusPaymentEnum) {
-        String message = null;
-        switch (statusPaymentEnum) {
-            case SELECTING_PAYMENT:
-                message = messageSource.getMessage("payment.selecting_payment", null, LocaleContextHolder.getLocale());
-                break;
-            case WAITING_PAYMENT:
-                message = messageSource.getMessage("payment.waiting_payment", null, LocaleContextHolder.getLocale());
-                break;
-            case VERIFYING_PAYMENT:
-                message = messageSource.getMessage("payment.verifying_payment", null, LocaleContextHolder.getLocale());
-                break;
-            case PAYMENT_FAILED:
-                message = messageSource.getMessage("payment.payment_failed", null, LocaleContextHolder.getLocale());
-                break;
-            case PAID:
-                message = messageSource.getMessage("payment.paid", null, LocaleContextHolder.getLocale());
-                break;
-            case PAYMENT_CANCELED:
-                message = messageSource.getMessage("payment.payment_canceled", null, LocaleContextHolder.getLocale());
-                break;
-            case PAYMENT_EXPIRED:
-                message = messageSource.getMessage("payment.payment_expired", null, LocaleContextHolder.getLocale());
-                break;
-            case PROCESS_REFUND:
-                message = messageSource.getMessage("payment.process_refund", null, LocaleContextHolder.getLocale());
-                break;
-            case WAITING_REFUND:
-                message = messageSource.getMessage("payment.waiting_refund", null, LocaleContextHolder.getLocale());
-                break;
-            case REFUNDED:
-                message = messageSource.getMessage("payment.refunded", null, LocaleContextHolder.getLocale());
-                break;
-            default:
-                message = "";
-                break;
-        }
-        return message;
+        return switch (statusPaymentEnum) {
+            case SELECTING_PAYMENT ->
+                    messageSource.getMessage("payment.selecting_payment", null, LocaleContextHolder.getLocale());
+            case WAITING_PAYMENT ->
+                    messageSource.getMessage("payment.waiting_payment", null, LocaleContextHolder.getLocale());
+            case VERIFYING_PAYMENT ->
+                    messageSource.getMessage("payment.verifying_payment", null, LocaleContextHolder.getLocale());
+            case PAYMENT_FAILED ->
+                    messageSource.getMessage("payment.payment_failed", null, LocaleContextHolder.getLocale());
+            case PAID -> messageSource.getMessage("payment.paid", null, LocaleContextHolder.getLocale());
+            case PAYMENT_CANCELED ->
+                    messageSource.getMessage("payment.payment_canceled", null, LocaleContextHolder.getLocale());
+            case PAYMENT_EXPIRED ->
+                    messageSource.getMessage("payment.payment_expired", null, LocaleContextHolder.getLocale());
+            case PROCESS_REFUND ->
+                    messageSource.getMessage("payment.process_refund", null, LocaleContextHolder.getLocale());
+            case WAITING_REFUND ->
+                    messageSource.getMessage("payment.waiting_refund", null, LocaleContextHolder.getLocale());
+            case REFUNDED -> messageSource.getMessage("payment.refunded", null, LocaleContextHolder.getLocale());
+        };
     }
 
 }
