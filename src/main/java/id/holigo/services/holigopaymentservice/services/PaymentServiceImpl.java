@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import id.holigo.services.common.model.*;
 import id.holigo.services.holigopaymentservice.domain.*;
+import id.holigo.services.holigopaymentservice.repositories.PaymentDepositRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentForbiddenRepository;
 import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
 import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
@@ -68,6 +69,13 @@ public class PaymentServiceImpl implements PaymentService {
     private PointService pointService;
 
     private DepositService depositService;
+
+    private PaymentDepositRepository paymentDepositRepository;
+
+    @Autowired
+    public void setPaymentDepositRepository(PaymentDepositRepository paymentDepositRepository) {
+        this.paymentDepositRepository = paymentDepositRepository;
+    }
 
     @Autowired
     public void setDepositService(DepositService depositService) {
@@ -188,9 +196,7 @@ public class PaymentServiceImpl implements PaymentService {
 
 
         BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());
-
         BigDecimal pointAmount = BigDecimal.ZERO;
-
         if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
             Boolean isValid = pinService.validate(
                     PinValidationDto.builder().pin(payment.getPin()).build(), payment.getUserId());
@@ -218,6 +224,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setPointAmount(pointAmount);
         payment.setDepositAmount(depositAmount);
 
+        PaymentStatusEnum paymentStatus = PaymentStatusEnum.WAITING_PAYMENT;
         // Switch selected payment
         BigDecimal paymentServiceAmount = totalAmount;
         BigDecimal serviceFeeAmount = BigDecimal.valueOf(0.00);
@@ -232,14 +239,19 @@ public class PaymentServiceImpl implements PaymentService {
                     throw new NotAcceptableException();
                 }
                 PaymentDeposit paymentDeposit = new PaymentDeposit();
-                paymentDeposit.
+                paymentDeposit.setUserId(payment.getUserId());
+                paymentDeposit.setServiceFeeAmount(BigDecimal.ZERO);
+                paymentDeposit.setBillAmount(payment.getPaymentServiceAmount());
+                paymentDeposit.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
                 depositAmount = debitDeposit(payment.getPaymentServiceAmount(), payment, transactionDto);
                 if (depositAmount.equals(payment.getPaymentServiceAmount())) {
                     remainingAmount = BigDecimal.ZERO;
-                    // get detail id
+                    paymentDeposit.setStatus(PaymentStatusEnum.PAID);
+                    paymentStatus = PaymentStatusEnum.PAID;
                 }
+                paymentDepositRepository.save(paymentDeposit);
                 detailType = "deposit";
-                detailId = "";
+                detailId = paymentDeposit.getId().toString();
             }
             case "BT_BCA", "BT_MANDIRI", "BT_BNI", "BT_BSI" -> {
                 PaymentBankTransfer paymentBankTransfer = paymentBankTransferService
@@ -289,7 +301,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setTotalAmount(totalAmount);
         payment.setPaymentServiceAmount(paymentServiceAmount);
         payment.setRemainingAmount(remainingAmount);
-        payment.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
+        payment.setStatus(paymentStatus);
         payment.setDetailType(detailType);
         payment.setDetailId(detailId);
 
