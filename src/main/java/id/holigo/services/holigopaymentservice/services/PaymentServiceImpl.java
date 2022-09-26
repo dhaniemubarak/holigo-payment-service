@@ -193,8 +193,7 @@ public class PaymentServiceImpl implements PaymentService {
                 throw new CouponInvalidException(applyCouponDto.getMessage(), null, false, false);
             }
         }
-
-
+        payment.setDiscountAmount(discountAmount);
         BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());
         BigDecimal pointAmount = BigDecimal.ZERO;
         if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
@@ -207,6 +206,8 @@ public class PaymentServiceImpl implements PaymentService {
             pointAmount = BigDecimal.valueOf(debitPoint(payment, transactionDto));
             totalAmount = totalAmount.subtract(pointAmount);
         }
+        payment.setPointAmount(pointAmount);
+
         BigDecimal depositAmount = BigDecimal.ZERO;
         if (payment.getPaymentService().getId().equals("DEPOSIT")) {
             payment.setDepositAmount(depositAmount);
@@ -220,10 +221,7 @@ public class PaymentServiceImpl implements PaymentService {
             depositAmount = debitDeposit(payment.getDepositAmount(), payment, transactionDto);
             totalAmount = totalAmount.subtract(depositAmount);
         }
-        payment.setDiscountAmount(discountAmount);
-        payment.setPointAmount(pointAmount);
         payment.setDepositAmount(depositAmount);
-
         PaymentStatusEnum paymentStatus = PaymentStatusEnum.WAITING_PAYMENT;
         // Switch selected payment
         BigDecimal paymentServiceAmount = totalAmount;
