@@ -16,11 +16,15 @@ import id.holigo.services.common.model.ApplyCouponDto;
 import id.holigo.services.holigopaymentservice.domain.PaymentForbidden;
 import id.holigo.services.holigopaymentservice.repositories.PaymentForbiddenRepository;
 import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
+import id.holigo.services.holigopaymentservice.services.pin.PinService;
 import id.holigo.services.holigopaymentservice.web.exceptions.CouponInvalidException;
+import id.holigo.services.holigopaymentservice.web.exceptions.NotAcceptableException;
+import id.holigo.services.holigopaymentservice.web.model.PinValidationDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
@@ -62,6 +66,13 @@ public class PaymentServiceImpl implements PaymentService {
     private CouponService couponService;
 
     private PaymentForbiddenRepository paymentForbiddenRepository;
+
+    private PinService pinService;
+
+    @Autowired
+    public void setPinService(PinService pinService) {
+        this.pinService = pinService;
+    }
 
     @Autowired
     public void setPaymentForbiddenRepository(PaymentForbiddenRepository paymentForbiddenRepository) {
@@ -143,6 +154,7 @@ public class PaymentServiceImpl implements PaymentService {
                     LocaleContextHolder.getLocale()));
         }
 
+        // Check for voucher
         BigDecimal discountAmount = BigDecimal.valueOf(0.00);
         if (payment.getCouponCode() != null) {
             // Get coupon value
@@ -164,15 +176,23 @@ public class PaymentServiceImpl implements PaymentService {
             }
         }
 
-        BigDecimal pointAmount = BigDecimal.valueOf(0.00);
+        BigDecimal pointAmount = BigDecimal.ZERO;
+        BigDecimal depositAmount = BigDecimal.ZERO;
         if (payment.getIsSplitBill()) {
-            // PIN validation
+            //
+            Boolean isValid = pinService.validate(
+                    PinValidationDto.builder().pin(payment.getPin()).build(), payment.getUserId());
+            if (!isValid) {
+                throw new NotAcceptableException();
+            }
+            // Point debit
 
-            // Point credit
+
+            // Deposit debit
         }
         payment.setDiscountAmount(discountAmount);
         payment.setPointAmount(pointAmount);
-        // Check for voucher
+
         // Switch selected payment
         BigDecimal paymentServiceAmount = BigDecimal.valueOf(0.00);
         BigDecimal serviceFeeAmount = BigDecimal.valueOf(0.00);

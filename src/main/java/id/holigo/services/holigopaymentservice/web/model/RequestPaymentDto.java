@@ -23,6 +23,8 @@ public class RequestPaymentDto implements Serializable {
 
     private BigDecimal pointAmount;
 
+    private BigDecimal depositAmount;
+
     private String pin;
 
     private String couponCode;
