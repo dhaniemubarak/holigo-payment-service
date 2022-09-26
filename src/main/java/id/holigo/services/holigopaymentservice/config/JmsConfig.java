@@ -22,6 +22,10 @@ public class JmsConfig {
 
     public static final String CREDIT_DEPOSIT = "credit-deposit";
 
+    public static final String DEBIT_POINT = "debit-point";
+
+    public static final String CREDIT_POINT = "credit-point";
+
     @Bean
     public MessageConverter jacksonJmsMessageConverter() {
         MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();

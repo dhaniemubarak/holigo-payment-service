@@ -36,7 +36,7 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
 
     @Override
     public PaymentVirtualAccount createNewVirtualAccount(TransactionDto transactionDto, Payment payment) {
-        BigDecimal totalAmount = transactionDto.getFareAmount();
+        BigDecimal totalAmount = payment.getPaymentServiceAmount();
         BigDecimal serviceFeeAmount = BigDecimal.valueOf(2750.00);
         BigDecimal billAmount = totalAmount.add(serviceFeeAmount);
         String[] users = transactionDto.getIndexUser().split("\\|");
@@ -88,7 +88,7 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
     }
 
     private void sendEvent(UUID id,
-            StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> sm, PaymentVirtualAccountEvent event) {
+                           StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> sm, PaymentVirtualAccountEvent event) {
         Message<PaymentVirtualAccountEvent> message = MessageBuilder.withPayload(event)
                 .setHeader(PAYMENT_VIRTUAL_ACCOUNT_HEADER, id).build();
         sm.sendEvent(message);

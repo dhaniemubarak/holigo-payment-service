@@ -1,8 +1,10 @@
 package id.holigo.services.holigopaymentservice.web.controllers;
+
 import java.util.Optional;
 import java.util.UUID;
 import javax.jms.JMSException;
 import javax.validation.Valid;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -50,6 +52,7 @@ public class PaymentController {
     private PaymentVirtualAccountMapper paymentVirtualAccountMapper;
 
     private PaymentServiceRepository paymentServiceRepository;
+
     @Autowired
     public void setPaymentBankTransferMapper(PaymentBankTransferMapper paymentBankTransferMapper) {
         this.paymentBankTransferMapper = paymentBankTransferMapper;
@@ -100,6 +103,7 @@ public class PaymentController {
         }
 
         Payment payment = paymentMapper.requestPaymentDtoToPayment(requestPaymentDto);
+        payment.setId(UUID.randomUUID());
         payment.setPaymentService(fetchPaymentService.get());
         payment.setUserId(userId);
 

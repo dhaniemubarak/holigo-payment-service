@@ -12,11 +12,13 @@ import javax.transaction.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import id.holigo.services.common.model.ApplyCouponDto;
-import id.holigo.services.holigopaymentservice.domain.PaymentForbidden;
+import id.holigo.services.common.model.*;
+import id.holigo.services.holigopaymentservice.domain.*;
 import id.holigo.services.holigopaymentservice.repositories.PaymentForbiddenRepository;
 import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
+import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
 import id.holigo.services.holigopaymentservice.services.pin.PinService;
+import id.holigo.services.holigopaymentservice.services.point.PointService;
 import id.holigo.services.holigopaymentservice.web.exceptions.CouponInvalidException;
 import id.holigo.services.holigopaymentservice.web.exceptions.NotAcceptableException;
 import id.holigo.services.holigopaymentservice.web.model.PinValidationDto;
@@ -24,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
@@ -32,11 +33,6 @@ import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
 
-import id.holigo.services.common.model.PaymentStatusEnum;
-import id.holigo.services.common.model.TransactionDto;
-import id.holigo.services.holigopaymentservice.domain.Payment;
-import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
-import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
 import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
@@ -68,6 +64,20 @@ public class PaymentServiceImpl implements PaymentService {
     private PaymentForbiddenRepository paymentForbiddenRepository;
 
     private PinService pinService;
+
+    private PointService pointService;
+
+    private DepositService depositService;
+
+    @Autowired
+    public void setDepositService(DepositService depositService) {
+        this.depositService = depositService;
+    }
+
+    @Autowired
+    public void setPointService(PointService pointService) {
+        this.pointService = pointService;
+    }
 
     @Autowired
     public void setPinService(PinService pinService) {
@@ -176,31 +186,61 @@ public class PaymentServiceImpl implements PaymentService {
             }
         }
 
+
+        BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());
+
         BigDecimal pointAmount = BigDecimal.ZERO;
-        BigDecimal depositAmount = BigDecimal.ZERO;
-        if (payment.getIsSplitBill()) {
-            //
+
+        if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
             Boolean isValid = pinService.validate(
                     PinValidationDto.builder().pin(payment.getPin()).build(), payment.getUserId());
             if (!isValid) {
                 throw new NotAcceptableException();
             }
             // Point debit
-
-
-            // Deposit debit
+            pointAmount = BigDecimal.valueOf(debitPoint(payment, transactionDto));
+            totalAmount = totalAmount.subtract(pointAmount);
+        }
+        BigDecimal depositAmount = BigDecimal.ZERO;
+        if (payment.getPaymentService().getId().equals("DEPOSIT")) {
+            payment.setDepositAmount(depositAmount);
+        }
+        if (payment.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
+            Boolean isValid = pinService.validate(
+                    PinValidationDto.builder().pin(payment.getPin()).build(), payment.getUserId());
+            if (!isValid) {
+                throw new NotAcceptableException();
+            }
+            depositAmount = debitDeposit(payment.getDepositAmount(), payment, transactionDto);
+            totalAmount = totalAmount.subtract(depositAmount);
         }
         payment.setDiscountAmount(discountAmount);
         payment.setPointAmount(pointAmount);
+        payment.setDepositAmount(depositAmount);
 
         // Switch selected payment
-        BigDecimal paymentServiceAmount = BigDecimal.valueOf(0.00);
+        BigDecimal paymentServiceAmount = totalAmount;
         BigDecimal serviceFeeAmount = BigDecimal.valueOf(0.00);
-        BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());
         BigDecimal remainingAmount = paymentServiceAmount;
         String detailType;
         String detailId = UUID.randomUUID().toString();
         switch (payment.getPaymentService().getId()) {
+            case "DEPOSIT" -> {
+                Boolean isValid = pinService.validate(
+                        PinValidationDto.builder().pin(payment.getPin()).build(), payment.getUserId());
+                if (!isValid) {
+                    throw new NotAcceptableException();
+                }
+                PaymentDeposit paymentDeposit = new PaymentDeposit();
+                paymentDeposit.
+                depositAmount = debitDeposit(payment.getPaymentServiceAmount(), payment, transactionDto);
+                if (depositAmount.equals(payment.getPaymentServiceAmount())) {
+                    remainingAmount = BigDecimal.ZERO;
+                    // get detail id
+                }
+                detailType = "deposit";
+                detailId = "";
+            }
             case "BT_BCA", "BT_MANDIRI", "BT_BNI", "BT_BSI" -> {
                 PaymentBankTransfer paymentBankTransfer = paymentBankTransferService
                         .createNewBankTransfer(transactionDto, payment);
@@ -334,6 +374,49 @@ public class PaymentServiceImpl implements PaymentService {
         pay.setPaymentService(null);
         transactionService.setPaymentInTransaction(payment.getTransactionId(), pay);
 //        }
+    }
+
+    private Integer debitPoint(Payment payment, TransactionDto transaction) {
+        PointDto pointDto = PointDto.builder().debitAmount(payment.getPointAmount().intValue())
+                .transactionId(payment.getTransactionId()).paymentId(payment.getId())
+                .informationIndex("pointStatement.payment")
+                .transactionType(transaction.getTransactionType())
+                .invoiceNumber(transaction.getInvoiceNumber())
+                .userId(transaction.getUserId())
+                .build();
+        PointDto resultPointDto;
+        try {
+            resultPointDto = pointService.credit(pointDto);
+        } catch (JMSException | JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        if (!resultPointDto.getIsValid()) {
+            return 0;
+        }
+        return resultPointDto.getDebitAmount();
+    }
+
+    private BigDecimal debitDeposit(BigDecimal debitAmount, Payment payment, TransactionDto transactionDto) {
+        DepositDto depositDto = DepositDto.builder()
+                .category("PAYMENT")
+                .debitAmount(debitAmount)
+                .paymentId(payment.getId())
+                .informationIndex("depositStatement.payment")
+                .invoiceNumber(transactionDto.getInvoiceNumber())
+                .transactionId(transactionDto.getId())
+                .transactionType(transactionDto.getTransactionType())
+                .userId(transactionDto.getUserId())
+                .build();
+        DepositDto resultDepositDto;
+        try {
+            resultDepositDto = depositService.credit(depositDto);
+        } catch (JMSException | JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        if (!resultDepositDto.getIsValid()) {
+            return BigDecimal.ZERO;
+        }
+        return resultDepositDto.getDebitAmount();
     }
 
 }

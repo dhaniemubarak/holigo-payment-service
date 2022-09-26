@@ -76,7 +76,7 @@ public class PaymentBankTransferServiceImpl implements PaymentBankTransferServic
                                                      Payment payment) {
         BigDecimal serviceFeeAmount;
         BigDecimal paymentServiceAmount;
-        BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());
+        BigDecimal totalAmount = payment.getPaymentServiceAmount();
 
 //        long uniqueCode = randomNumber();
 //        serviceFeeAmount = BigDecimal.valueOf(uniqueCode);
