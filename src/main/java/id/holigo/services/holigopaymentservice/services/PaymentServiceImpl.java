@@ -1,6 +1,7 @@
 package id.holigo.services.holigopaymentservice.services;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,19 +12,15 @@ import javax.jms.JMSException;
 import javax.transaction.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-
 import id.holigo.services.common.model.*;
 import id.holigo.services.holigopaymentservice.domain.*;
 import id.holigo.services.holigopaymentservice.repositories.PaymentDepositRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentForbiddenRepository;
+import id.holigo.services.holigopaymentservice.repositories.PaymentPointRepository;
 import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
 import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
-import id.holigo.services.holigopaymentservice.services.pin.PinService;
 import id.holigo.services.holigopaymentservice.services.point.PointService;
 import id.holigo.services.holigopaymentservice.web.exceptions.CouponInvalidException;
-import id.holigo.services.holigopaymentservice.web.exceptions.NotAcceptableException;
-import id.holigo.services.holigopaymentservice.web.model.PinValidationDto;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -38,12 +35,10 @@ import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
 import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
 import id.holigo.services.holigopaymentservice.web.exceptions.ForbiddenException;
-import id.holigo.services.holigopaymentservice.web.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Service
-@Slf4j
 public class PaymentServiceImpl implements PaymentService {
 
     public static final String PAYMENT_HEADER = "payment_id";
@@ -51,9 +46,6 @@ public class PaymentServiceImpl implements PaymentService {
     private TransactionService transactionService;
 
     private MessageSource messageSource;
-
-    private StatusPaymentService statusPaymentService;
-
     private PaymentRepository paymentRepository;
 
     private PaymentBankTransferService paymentBankTransferService;
@@ -64,13 +56,18 @@ public class PaymentServiceImpl implements PaymentService {
 
     private PaymentForbiddenRepository paymentForbiddenRepository;
 
-    private PinService pinService;
-
     private PointService pointService;
 
     private DepositService depositService;
 
     private PaymentDepositRepository paymentDepositRepository;
+
+    private PaymentPointRepository paymentPointRepository;
+
+    @Autowired
+    public void setPaymentPointRepository(PaymentPointRepository paymentPointRepository) {
+        this.paymentPointRepository = paymentPointRepository;
+    }
 
     @Autowired
     public void setPaymentDepositRepository(PaymentDepositRepository paymentDepositRepository) {
@@ -85,11 +82,6 @@ public class PaymentServiceImpl implements PaymentService {
     @Autowired
     public void setPointService(PointService pointService) {
         this.pointService = pointService;
-    }
-
-    @Autowired
-    public void setPinService(PinService pinService) {
-        this.pinService = pinService;
     }
 
     @Autowired
@@ -127,44 +119,13 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Autowired
-    public void setStatusPaymentService(StatusPaymentService statusPaymentService) {
-        this.statusPaymentService = statusPaymentService;
-    }
-
-    @Autowired
     public void setCouponService(CouponService couponService) {
         this.couponService = couponService;
     }
 
     @Override
-    public Payment createPayment(Payment payment) throws JsonProcessingException, JMSException {
+    public Payment createPayment(Payment payment, TransactionDto transactionDto, AccountBalanceDto accountBalanceDto) throws JsonProcessingException, JMSException {
 
-        TransactionDto transactionDto = transactionService.getTransaction(payment.getTransactionId());
-
-        if (transactionDto.getUserId() == null) {
-            throw new NotFoundException(messageSource.getMessage("holigo-transaction-service.not_found", null,
-                    LocaleContextHolder.getLocale()));
-        }
-
-        if (transactionDto.getUserId().longValue() != payment.getUserId().longValue()) {
-            throw new ForbiddenException(messageSource.getMessage("payment.user_transaction_not_match", null,
-                    LocaleContextHolder.getLocale()));
-        }
-
-        if (transactionDto.getPaymentStatus() != PaymentStatusEnum.SELECTING_PAYMENT
-                && transactionDto.getPaymentStatus() != PaymentStatusEnum.WAITING_PAYMENT) {
-            String message = statusPaymentService.getStatusMessage(transactionDto.getPaymentStatus());
-
-            throw new ForbiddenException(message);
-        }
-
-        if (transactionDto.getPaymentStatus() == PaymentStatusEnum.WAITING_PAYMENT) {
-            Payment waitingPayment = paymentRepository.getById(transactionDto.getPaymentId());
-            cancelPayment(waitingPayment);
-        }
-
-        // Cek apakah layanan pembayaran dibuka atau di tutup untuk produk yang mau
-        // dibeli
         Optional<PaymentForbidden> fetchPaymentForbidden = paymentForbiddenRepository
                 .findByPaymentServiceAndProductId(payment.getPaymentService(), transactionDto.getProductId());
         if (fetchPaymentForbidden.isPresent()) {
@@ -196,53 +157,35 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setDiscountAmount(discountAmount);
         BigDecimal totalAmount = transactionDto.getFareAmount().subtract(payment.getDiscountAmount());
         BigDecimal pointAmount = BigDecimal.ZERO;
-        if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
-            Boolean isValid = pinService.validate(
-                    PinValidationDto.builder().pin(payment.getPin()).build(), payment.getUserId());
-            if (!isValid) {
-                throw new NotAcceptableException();
-            }
+        if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0 && !payment.getPaymentService().getId().equals("POINT")) {
             // Point debit
-            pointAmount = BigDecimal.valueOf(debitPoint(payment, transactionDto));
+            payment.setIsSplitBill(true);
+            pointAmount = BigDecimal.valueOf(debitPoint(payment.getPointAmount(), payment, transactionDto));
             totalAmount = totalAmount.subtract(pointAmount);
         }
         payment.setPointAmount(pointAmount);
-
-        BigDecimal depositAmount = BigDecimal.ZERO;
-        if (payment.getPaymentService().getId().equals("DEPOSIT")) {
-            payment.setDepositAmount(depositAmount);
-        }
-        if (payment.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
-            Boolean isValid = pinService.validate(
-                    PinValidationDto.builder().pin(payment.getPin()).build(), payment.getUserId());
-            if (!isValid) {
-                throw new NotAcceptableException();
-            }
-            depositAmount = debitDeposit(payment.getDepositAmount(), payment, transactionDto);
-            totalAmount = totalAmount.subtract(depositAmount);
-        }
-        payment.setDepositAmount(depositAmount);
+        BigDecimal depositAmount;
         PaymentStatusEnum paymentStatus = PaymentStatusEnum.WAITING_PAYMENT;
         // Switch selected payment
         BigDecimal paymentServiceAmount = totalAmount;
         BigDecimal serviceFeeAmount = BigDecimal.valueOf(0.00);
-        BigDecimal remainingAmount = paymentServiceAmount;
+        BigDecimal remainingAmount = paymentServiceAmount.add(serviceFeeAmount);
         String detailType;
-        String detailId = UUID.randomUUID().toString();
+        String detailId = null;
+
         switch (payment.getPaymentService().getId()) {
             case "DEPOSIT" -> {
-                Boolean isValid = pinService.validate(
-                        PinValidationDto.builder().pin(payment.getPin()).build(), payment.getUserId());
-                if (!isValid) {
-                    throw new NotAcceptableException();
+                if (remainingAmount.compareTo(accountBalanceDto.getDeposit()) < 0) {
+                    throw new ForbiddenException("Saldo Anda kurang");
                 }
                 PaymentDeposit paymentDeposit = new PaymentDeposit();
                 paymentDeposit.setUserId(payment.getUserId());
                 paymentDeposit.setServiceFeeAmount(BigDecimal.ZERO);
-                paymentDeposit.setBillAmount(payment.getPaymentServiceAmount());
+                paymentDeposit.setTotalAmount(paymentServiceAmount);
+                paymentDeposit.setBillAmount(paymentDeposit.getTotalAmount().add(paymentDeposit.getServiceFeeAmount()));
                 paymentDeposit.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
-                depositAmount = debitDeposit(payment.getPaymentServiceAmount(), payment, transactionDto);
-                if (depositAmount.equals(payment.getPaymentServiceAmount())) {
+                depositAmount = debitDeposit(paymentDeposit.getBillAmount(), payment, transactionDto);
+                if (depositAmount.equals(paymentDeposit.getBillAmount())) {
                     remainingAmount = BigDecimal.ZERO;
                     paymentDeposit.setStatus(PaymentStatusEnum.PAID);
                     paymentStatus = PaymentStatusEnum.PAID;
@@ -250,6 +193,23 @@ public class PaymentServiceImpl implements PaymentService {
                 paymentDepositRepository.save(paymentDeposit);
                 detailType = "deposit";
                 detailId = paymentDeposit.getId().toString();
+            }
+            case "POINT" -> {
+                PaymentPoint paymentPoint = new PaymentPoint();
+                paymentPoint.setUserId(payment.getUserId());
+                paymentPoint.setServiceFeeAmount(BigDecimal.ZERO);
+                paymentPoint.setTotalAmount(paymentServiceAmount);
+                paymentPoint.setBillAmount(paymentPoint.getTotalAmount().add(paymentPoint.getServiceFeeAmount()));
+                paymentPoint.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
+                pointAmount = BigDecimal.valueOf(debitPoint(paymentPoint.getBillAmount(), payment, transactionDto)).setScale(2, RoundingMode.UP);
+                if (pointAmount.equals(paymentPoint.getBillAmount())) {
+                    remainingAmount = BigDecimal.ZERO;
+                    paymentPoint.setStatus(PaymentStatusEnum.PAID);
+                    paymentStatus = PaymentStatusEnum.PAID;
+                }
+                paymentPointRepository.save(paymentPoint);
+                detailType = "point";
+                detailId = paymentPoint.getId().toString();
             }
             case "BT_BCA", "BT_MANDIRI", "BT_BNI", "BT_BSI" -> {
                 PaymentBankTransfer paymentBankTransfer = paymentBankTransferService
@@ -306,6 +266,9 @@ public class PaymentServiceImpl implements PaymentService {
         // Create payment after get callback from supplier
         Payment savedPayment = paymentRepository.save(payment);
         transactionService.setPaymentInTransaction(payment.getTransactionId(), payment);
+        if (savedPayment.getStatus().equals(PaymentStatusEnum.PAID)) {
+            transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
+        }
         return savedPayment;
     }
 
@@ -386,8 +349,8 @@ public class PaymentServiceImpl implements PaymentService {
 //        }
     }
 
-    private Integer debitPoint(Payment payment, TransactionDto transaction) {
-        PointDto pointDto = PointDto.builder().debitAmount(payment.getPointAmount().intValue())
+    private Integer debitPoint(BigDecimal pointAmount, Payment payment, TransactionDto transaction) {
+        PointDto pointDto = PointDto.builder().debitAmount(pointAmount.intValue())
                 .transactionId(payment.getTransactionId()).paymentId(payment.getId())
                 .informationIndex("pointStatement.payment")
                 .transactionType(transaction.getTransactionType())
@@ -396,7 +359,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
         PointDto resultPointDto;
         try {
-            resultPointDto = pointService.credit(pointDto);
+            resultPointDto = pointService.debit(pointDto);
         } catch (JMSException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -419,13 +382,14 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
         DepositDto resultDepositDto;
         try {
-            resultDepositDto = depositService.credit(depositDto);
+            resultDepositDto = depositService.debit(depositDto);
         } catch (JMSException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }
         if (!resultDepositDto.getIsValid()) {
             return BigDecimal.ZERO;
         }
+
         return resultDepositDto.getDebitAmount();
     }
 

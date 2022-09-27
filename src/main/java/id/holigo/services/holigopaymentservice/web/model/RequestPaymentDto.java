@@ -21,9 +21,7 @@ public class RequestPaymentDto implements Serializable {
 
     private Boolean isSplitBill;
 
-    private BigDecimal pointAmount;
-
-    private BigDecimal depositAmount;
+    private BigDecimal pointAmount = BigDecimal.ZERO;
 
     private String pin;
 

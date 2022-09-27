@@ -81,22 +81,16 @@ public class PaymentBankTransferSMConfig
 
     public Action<PaymentStatusEnum, PaymentBankTransferEvent> paymentPaidAction() {
         return context -> {
-            log.info("paymentPaidAction in PaymentBankTransferSMConfig is running....");
             Optional<Payment> fetchPayment = paymentRepository.findByDetailTypeAndDetailId("bankTransfer",
                     context.getMessageHeader(PaymentBankTransferServiceImpl.PAYMENT_BANK_TRANSFER_HEADER).toString());
             if (fetchPayment.isPresent()) {
-                log.info("payment found.");
-                log.info("Calling payment service for isseud");
                 Payment payment = fetchPayment.get();
-                log.info("Payment -> {}", payment);
                 StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(payment);
                 sm.sendEvent(MessageBuilder
                         .withPayload(PaymentStatusEvent.PAYMENT_PAID)
                         .setHeader(PaymentServiceImpl.PAYMENT_HEADER,
                                 payment.getId().toString())
                         .build());
-            } else {
-                log.info("Payment not found");
             }
         };
     }

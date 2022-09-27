@@ -8,13 +8,11 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import javax.persistence.Transient;
 
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -73,9 +71,6 @@ public class Payment {
 
     @Column(precision = 10, scale = 2, nullable = false, columnDefinition = "decimal(10,2) default 0")
     private BigDecimal pointAmount;
-
-    @Column(precision = 10, scale = 2, nullable = false, columnDefinition = "decimal(10,2) default 0")
-    private BigDecimal depositAmount;
 
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal remainingAmount;

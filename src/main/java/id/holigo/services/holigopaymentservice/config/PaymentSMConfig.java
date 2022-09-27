@@ -71,7 +71,6 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
 
     public Action<PaymentStatusEnum, PaymentStatusEvent> paidAction() {
         return context -> {
-            log.info("paidAction in PaymentSMConfig is running...");
             Payment payment = paymentRepository
                     .getById(UUID.fromString(context.getMessageHeader(PaymentServiceImpl.PAYMENT_HEADER).toString()));
             transactionService.issuedTransaction(payment.getTransactionId(), payment);

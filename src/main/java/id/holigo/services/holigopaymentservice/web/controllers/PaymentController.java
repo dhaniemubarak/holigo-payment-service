@@ -1,12 +1,22 @@
 package id.holigo.services.holigopaymentservice.web.controllers;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 import javax.jms.JMSException;
 import javax.validation.Valid;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import id.holigo.services.common.model.AccountBalanceDto;
+import id.holigo.services.common.model.PaymentStatusEnum;
+import id.holigo.services.common.model.TransactionDto;
+import id.holigo.services.holigopaymentservice.services.StatusPaymentService;
+import id.holigo.services.holigopaymentservice.services.accountBalance.AccountBalanceService;
+import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
+import id.holigo.services.holigopaymentservice.web.exceptions.ForbiddenException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,6 +62,34 @@ public class PaymentController {
     private PaymentVirtualAccountMapper paymentVirtualAccountMapper;
 
     private PaymentServiceRepository paymentServiceRepository;
+
+    private AccountBalanceService accountBalanceService;
+
+    private StatusPaymentService statusPaymentService;
+
+    private TransactionService transactionService;
+
+    private MessageSource messageSource;
+
+    @Autowired
+    public void setMessageSource(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
+
+    @Autowired
+    public void setTransactionService(TransactionService transactionService) {
+        this.transactionService = transactionService;
+    }
+
+    @Autowired
+    public void setStatusPaymentService(StatusPaymentService statusPaymentService) {
+        this.statusPaymentService = statusPaymentService;
+    }
+
+    @Autowired
+    public void setAccountBalanceService(AccountBalanceService accountBalanceService) {
+        this.accountBalanceService = accountBalanceService;
+    }
 
     @Autowired
     public void setPaymentBankTransferMapper(PaymentBankTransferMapper paymentBankTransferMapper) {
@@ -101,13 +139,59 @@ public class PaymentController {
         if (fetchPaymentService.isEmpty()) {
             throw new NotFoundException("Payment method not found");
         }
+        TransactionDto transactionDto = transactionService.getTransaction(requestPaymentDto.getTransactionId());
+
+        if (transactionDto.getUserId() == null) {
+            throw new NotFoundException(messageSource.getMessage("holigo-transaction-service.not_found", null,
+                    LocaleContextHolder.getLocale()));
+        }
+
+        if (transactionDto.getUserId().longValue() != userId.longValue()) {
+            throw new ForbiddenException(messageSource.getMessage("payment.user_transaction_not_match", null,
+                    LocaleContextHolder.getLocale()));
+        }
+
+        if (transactionDto.getPaymentStatus() != PaymentStatusEnum.SELECTING_PAYMENT
+                && transactionDto.getPaymentStatus() != PaymentStatusEnum.WAITING_PAYMENT) {
+            String message = statusPaymentService.getStatusMessage(transactionDto.getPaymentStatus());
+
+            throw new ForbiddenException(message);
+        }
+
+        if (transactionDto.getPaymentStatus() == PaymentStatusEnum.WAITING_PAYMENT) {
+            Payment waitingPayment = paymentRepository.getById(transactionDto.getPaymentId());
+            paymentService.cancelPayment(waitingPayment);
+        }
+
+        AccountBalanceDto accountBalanceDto = accountBalanceService.getAccountBalance(userId);
+
+
+        // Cek apakah layanan pembayaran dibuka atau di tutup untuk produk yang mau
+        // dibeli
+        if (requestPaymentDto.getPaymentServiceId().equals("POINT") ||
+                requestPaymentDto.getPaymentServiceId().equals("DEPOSIT") ||
+                requestPaymentDto.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
+//            Boolean isValid = pinService.validate(
+//                    PinValidationDto.builder().pin(requestPaymentDto.getPin()).build(), userId);
+//            if (!isValid) {
+//                throw new NotAcceptableException();
+//            }
+
+            if (accountBalanceDto == null) {
+                throw new ForbiddenException("account balance not found");
+            }
+            if (requestPaymentDto.getPointAmount().compareTo(BigDecimal.valueOf(accountBalanceDto.getPoint())) > 0) {
+                throw new ForbiddenException("Point tidak cukup");
+            }
+            // 10000 14500 = -1
+        }
 
         Payment payment = paymentMapper.requestPaymentDtoToPayment(requestPaymentDto);
         payment.setId(UUID.randomUUID());
         payment.setPaymentService(fetchPaymentService.get());
         payment.setUserId(userId);
 
-        Payment savedPayment = paymentService.createPayment(payment);
+        Payment savedPayment = paymentService.createPayment(payment, transactionDto, accountBalanceDto);
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setLocation(
                 UriComponentsBuilder.fromPath("/api/v1/payments/{id}").buildAndExpand(savedPayment.getId()).toUri());
@@ -133,7 +217,6 @@ public class PaymentController {
         ResponseEntity<?> response;
         switch (paymentService) {
             case "bankTransfer" -> {
-                log.info("bank transfer is running with id -> {}", detailId);
                 Optional<PaymentBankTransfer> fetchPaymentBankTransfer = paymentBankTransferRepository
                         .findById(detailId);
                 if (fetchPaymentBankTransfer.isEmpty()) {

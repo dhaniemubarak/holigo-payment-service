@@ -71,7 +71,7 @@ public class PaymentVirtualAccountSMConfig
         StateMachineListenerAdapter<PaymentStatusEnum, PaymentVirtualAccountEvent> adapter = new StateMachineListenerAdapter<>() {
             @Override
             public void stateChanged(State<PaymentStatusEnum, PaymentVirtualAccountEvent> from,
-                    State<PaymentStatusEnum, PaymentVirtualAccountEvent> to) {
+                                     State<PaymentStatusEnum, PaymentVirtualAccountEvent> to) {
                 log.info(String.format("stateChange(from: %s, to %s)", from, to));
             }
         };
@@ -80,16 +80,12 @@ public class PaymentVirtualAccountSMConfig
 
     public Action<PaymentStatusEnum, PaymentVirtualAccountEvent> paymentPaidAction() {
         return context -> {
-            log.info("paymentPaidAction in PaymentVirtualAccountSMConfig is running....");
             Optional<Payment> fetchPayment = paymentRepository.findByDetailTypeAndDetailId("virtualAccount",
                     context.getMessageHeader(
-                            PaymentVirtualAccountServiceImpl.PAYMENT_VIRTUAL_ACCOUNT_HEADER)
+                                    PaymentVirtualAccountServiceImpl.PAYMENT_VIRTUAL_ACCOUNT_HEADER)
                             .toString());
             if (fetchPayment.isPresent()) {
-                log.info("payment found.");
-                log.info("Calling payment service for isseud");
                 Payment payment = fetchPayment.get();
-                log.info("Payment -> {}", payment);
                 StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(payment);
                 sm.sendEvent(MessageBuilder
                         .withPayload(PaymentStatusEvent.PAYMENT_PAID)
@@ -97,8 +93,6 @@ public class PaymentVirtualAccountSMConfig
                                 payment.getId().toString())
                         .build());
 
-            } else {
-                log.info("Payment not found");
             }
         };
     }
@@ -110,7 +104,7 @@ public class PaymentVirtualAccountSMConfig
         sm.stop();
         sm.getStateMachineAccessor().doWithAllRegions(sma -> {
             sma.addStateMachineInterceptor(paymentInterceptor);
-            sma.resetStateMachine(new DefaultStateMachineContext<PaymentStatusEnum, PaymentStatusEvent>(
+            sma.resetStateMachine(new DefaultStateMachineContext<>(
                     payment.getStatus(), null, null, null));
         });
         sm.start();
