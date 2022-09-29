@@ -170,18 +170,27 @@ public class PaymentController {
         // dibeli
         if (requestPaymentDto.getPaymentServiceId().equals("POINT") ||
                 requestPaymentDto.getPaymentServiceId().equals("DEPOSIT") ||
-                requestPaymentDto.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
+                requestPaymentDto.getPointAmount().compareTo(BigDecimal.ZERO) > 0 ||
+                requestPaymentDto.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
 //            Boolean isValid = pinService.validate(
 //                    PinValidationDto.builder().pin(requestPaymentDto.getPin()).build(), userId);
 //            if (!isValid) {
 //                throw new NotAcceptableException();
 //            }
-
             if (accountBalanceDto == null) {
                 throw new ForbiddenException("account balance not found");
             }
+            if (accountBalanceDto.getPoint() == null) {
+                accountBalanceDto.setPoint(0);
+            }
+            if (accountBalanceDto.getDeposit() == null) {
+                accountBalanceDto.setDeposit(BigDecimal.ZERO);
+            }
             if (requestPaymentDto.getPointAmount().compareTo(BigDecimal.valueOf(accountBalanceDto.getPoint())) > 0) {
                 throw new ForbiddenException("Point tidak cukup");
+            }
+            if (requestPaymentDto.getDepositAmount().compareTo(accountBalanceDto.getDeposit()) > 0) {
+                throw new ForbiddenException("Saldo tidak cukup");
             }
             // 10000 14500 = -1
         }

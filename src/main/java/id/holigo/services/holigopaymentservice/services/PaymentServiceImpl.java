@@ -172,7 +172,7 @@ public class PaymentServiceImpl implements PaymentService {
         BigDecimal remainingAmount = paymentServiceAmount.add(serviceFeeAmount);
         String detailType;
         String detailId = null;
-
+        payment.setPaymentServiceAmount(paymentServiceAmount);
         switch (payment.getPaymentService().getId()) {
             case "DEPOSIT" -> {
                 if (remainingAmount.compareTo(accountBalanceDto.getDeposit()) < 0) {

@@ -72,6 +72,9 @@ public class Payment {
     @Column(precision = 10, scale = 2, nullable = false, columnDefinition = "decimal(10,2) default 0")
     private BigDecimal pointAmount;
 
+    @Column(precision = 10, scale = 2, nullable = false, columnDefinition = "decimal(10,2) default 0")
+    private BigDecimal depositAmount;
+
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal remainingAmount;
 
