@@ -164,7 +164,7 @@ public class PaymentServiceImpl implements PaymentService {
             totalAmount = totalAmount.subtract(pointAmount);
         }
         payment.setPointAmount(pointAmount);
-        BigDecimal depositAmount;
+        BigDecimal depositAmount = BigDecimal.ZERO;
         PaymentStatusEnum paymentStatus = PaymentStatusEnum.WAITING_PAYMENT;
         // Switch selected payment
         BigDecimal paymentServiceAmount = totalAmount;
@@ -256,6 +256,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setDiscountAmount(discountAmount);
         payment.setServiceFeeAmount(serviceFeeAmount);
         payment.setPointAmount(pointAmount);
+        payment.setDepositAmount(depositAmount);
         payment.setTotalAmount(totalAmount);
         payment.setPaymentServiceAmount(paymentServiceAmount);
         payment.setRemainingAmount(remainingAmount);
