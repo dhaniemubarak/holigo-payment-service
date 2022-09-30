@@ -4,13 +4,13 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class RequestPaymentDto implements Serializable {
 
     static final long serialVersionUID = -155181210L;
@@ -21,8 +21,10 @@ public class RequestPaymentDto implements Serializable {
 
     private Boolean isSplitBill;
 
+    @Builder.Default
     private BigDecimal pointAmount = BigDecimal.ZERO;
 
+    @Builder.Default
     private BigDecimal depositAmount = BigDecimal.ZERO;
 
     private String pin;

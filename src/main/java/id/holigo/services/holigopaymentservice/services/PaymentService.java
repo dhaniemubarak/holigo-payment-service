@@ -25,5 +25,5 @@ public interface PaymentService {
 
     StateMachine<PaymentStatusEnum, PaymentStatusEvent> paymentCanceled(UUID id);
 
-    void cancelPayment(Payment payment);
+    void cancelPayment(Payment payment, TransactionDto transactionDto);
 }

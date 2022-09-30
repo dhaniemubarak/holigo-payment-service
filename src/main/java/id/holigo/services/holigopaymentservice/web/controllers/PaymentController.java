@@ -139,6 +139,12 @@ public class PaymentController {
         if (fetchPaymentService.isEmpty()) {
             throw new NotFoundException("Payment method not found");
         }
+        if (requestPaymentDto.getPointAmount() == null) {
+            requestPaymentDto.setPointAmount(BigDecimal.ZERO);
+        }
+        if (requestPaymentDto.getDepositAmount() == null) {
+            requestPaymentDto.setDepositAmount(BigDecimal.ZERO);
+        }
         TransactionDto transactionDto = transactionService.getTransaction(requestPaymentDto.getTransactionId());
 
         if (transactionDto.getUserId() == null) {
@@ -160,7 +166,7 @@ public class PaymentController {
 
         if (transactionDto.getPaymentStatus() == PaymentStatusEnum.WAITING_PAYMENT) {
             Payment waitingPayment = paymentRepository.getById(transactionDto.getPaymentId());
-            paymentService.cancelPayment(waitingPayment);
+            paymentService.cancelPayment(waitingPayment, transactionDto);
         }
 
         AccountBalanceDto accountBalanceDto = accountBalanceService.getAccountBalance(userId);
@@ -188,6 +194,9 @@ public class PaymentController {
             }
             if (requestPaymentDto.getPointAmount().compareTo(BigDecimal.valueOf(accountBalanceDto.getPoint())) > 0) {
                 throw new ForbiddenException("Point tidak cukup");
+            }
+            if (requestPaymentDto.getPaymentServiceId().equals("DEPOSIT")) {
+                requestPaymentDto.setDepositAmount(transactionDto.getFareAmount());
             }
             if (requestPaymentDto.getDepositAmount().compareTo(accountBalanceDto.getDeposit()) > 0) {
                 throw new ForbiddenException("Saldo tidak cukup");
