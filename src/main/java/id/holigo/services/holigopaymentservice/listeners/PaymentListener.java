@@ -1,20 +1,19 @@
 package id.holigo.services.holigopaymentservice.listeners;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import id.holigo.services.common.model.DepositDto;
-import id.holigo.services.common.model.PaymentStatusEnum;
+import id.holigo.services.common.model.*;
 import id.holigo.services.holigopaymentservice.services.PaymentService;
 import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
+import id.holigo.services.holigopaymentservice.services.point.PointService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import id.holigo.services.common.events.TransactionEvent;
-import id.holigo.services.common.model.OrderStatusEnum;
-import id.holigo.services.common.model.TransactionDto;
 import id.holigo.services.holigopaymentservice.config.JmsConfig;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
@@ -37,7 +36,13 @@ public class PaymentListener {
     private BankTransferCallbackService bankTransferCallbackService;
     private VirtualAccountCallbackService virtualAccountCallbackService;
     private DepositService depositService;
+    private PointService pointService;
     private PaymentService paymentService;
+
+    @Autowired
+    public void setPointService(PointService pointService) {
+        this.pointService = pointService;
+    }
 
     @Autowired
     public void setPaymentService(PaymentService paymentService) {
@@ -99,6 +104,22 @@ public class PaymentListener {
 
             } catch (JMSException | JsonProcessingException e) {
                 throw new RuntimeException(e);
+            }
+            if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
+                PointDto pointDto = PointDto.builder()
+                        .creditAmount(payment.getPointAmount().intValue())
+                        .paymentId(payment.getId())
+                        .informationIndex("pointStatement.refundTransaction")
+                        .invoiceNumber(transactionDto.getInvoiceNumber())
+                        .transactionId(transactionDto.getId())
+                        .transactionType(transactionDto.getTransactionType())
+                        .userId(transactionDto.getUserId()).build();
+                try {
+                    pointService.credit(pointDto);
+
+                } catch (JMSException | JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
         switch (payment.getDetailType()) {
