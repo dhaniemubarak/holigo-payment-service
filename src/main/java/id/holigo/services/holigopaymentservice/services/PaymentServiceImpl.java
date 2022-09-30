@@ -343,8 +343,8 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     @Override
     public void cancelPayment(Payment payment, TransactionDto transactionDto) {
+        paymentCanceled(payment.getId());
         payment.setDeletedAt(Timestamp.valueOf(LocalDateTime.now()));
-        payment.setStatus(PaymentStatusEnum.PAYMENT_CANCELED);
         Payment updatedPayment = paymentRepository.save(payment);
         if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
             creditPoint(payment.getPointAmount(), payment, transactionDto);
