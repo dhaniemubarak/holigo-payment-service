@@ -83,6 +83,7 @@ public class PaymentServiceImpl implements PaymentService {
     public void setPaymentRepository(PaymentRepository paymentRepository) {
         this.paymentRepository = paymentRepository;
     }
+
     @Autowired
     public void setTransactionService(TransactionService transactionService) {
         this.transactionService = transactionService;
@@ -107,7 +108,7 @@ public class PaymentServiceImpl implements PaymentService {
     public Payment createPayment(Payment payment, TransactionDto transactionDto, AccountBalanceDto accountBalanceDto) throws JsonProcessingException, JMSException {
         // Check for voucher
         BigDecimal discountAmount = BigDecimal.valueOf(0.00);
-        if (payment.getCouponCode() != null) {
+        if (payment.getCouponCode() != null && payment.getCouponCode().length() > 0) {
             // Get coupon value
             ApplyCouponDto applyCouponDto = couponService.applyCoupon(payment.getTransactionId(), payment.getCouponCode(),
                     payment.getPaymentService().getId(), payment.getUserId());
