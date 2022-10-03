@@ -5,7 +5,6 @@ import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.jms.JMSException;
@@ -15,15 +14,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import id.holigo.services.common.model.*;
 import id.holigo.services.holigopaymentservice.domain.*;
 import id.holigo.services.holigopaymentservice.repositories.PaymentDepositRepository;
-import id.holigo.services.holigopaymentservice.repositories.PaymentForbiddenRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentPointRepository;
 import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
 import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
 import id.holigo.services.holigopaymentservice.services.point.PointService;
 import id.holigo.services.holigopaymentservice.web.exceptions.CouponInvalidException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
@@ -44,8 +40,6 @@ public class PaymentServiceImpl implements PaymentService {
     public static final String PAYMENT_HEADER = "payment_id";
 
     private TransactionService transactionService;
-
-    private MessageSource messageSource;
     private PaymentRepository paymentRepository;
 
     private PaymentBankTransferService paymentBankTransferService;
@@ -53,9 +47,6 @@ public class PaymentServiceImpl implements PaymentService {
     private PaymentVirtualAccountService paymentVirtualAccountService;
 
     private CouponService couponService;
-
-    private PaymentForbiddenRepository paymentForbiddenRepository;
-
     private PointService pointService;
 
     private DepositService depositService;
@@ -84,11 +75,6 @@ public class PaymentServiceImpl implements PaymentService {
         this.pointService = pointService;
     }
 
-    @Autowired
-    public void setPaymentForbiddenRepository(PaymentForbiddenRepository paymentForbiddenRepository) {
-        this.paymentForbiddenRepository = paymentForbiddenRepository;
-    }
-
     private final StateMachineFactory<PaymentStatusEnum, PaymentStatusEvent> stateMachineFactory;
 
     private final PaymentInterceptor paymentInterceptor;
@@ -97,12 +83,6 @@ public class PaymentServiceImpl implements PaymentService {
     public void setPaymentRepository(PaymentRepository paymentRepository) {
         this.paymentRepository = paymentRepository;
     }
-
-    @Autowired
-    public void setMessageSource(MessageSource messageSource) {
-        this.messageSource = messageSource;
-    }
-
     @Autowired
     public void setTransactionService(TransactionService transactionService) {
         this.transactionService = transactionService;
@@ -125,14 +105,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment createPayment(Payment payment, TransactionDto transactionDto, AccountBalanceDto accountBalanceDto) throws JsonProcessingException, JMSException {
-
-        Optional<PaymentForbidden> fetchPaymentForbidden = paymentForbiddenRepository
-                .findByPaymentServiceAndProductId(payment.getPaymentService(), transactionDto.getProductId());
-        if (fetchPaymentForbidden.isPresent()) {
-            throw new ForbiddenException(messageSource.getMessage("payment.forbidden_product", null,
-                    LocaleContextHolder.getLocale()));
-        }
-
         // Check for voucher
         BigDecimal discountAmount = BigDecimal.valueOf(0.00);
         if (payment.getCouponCode() != null) {

@@ -10,6 +10,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import id.holigo.services.common.model.AccountBalanceDto;
 import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.common.model.TransactionDto;
+import id.holigo.services.holigopaymentservice.domain.PaymentForbidden;
+import id.holigo.services.holigopaymentservice.repositories.*;
 import id.holigo.services.holigopaymentservice.services.StatusPaymentService;
 import id.holigo.services.holigopaymentservice.services.accountBalance.AccountBalanceService;
 import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
@@ -31,10 +33,6 @@ import id.holigo.services.common.model.PaymentDtoForUser;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
 import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
-import id.holigo.services.holigopaymentservice.repositories.PaymentBankTransferRepository;
-import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
-import id.holigo.services.holigopaymentservice.repositories.PaymentServiceRepository;
-import id.holigo.services.holigopaymentservice.repositories.PaymentVirtualAccountRepository;
 import id.holigo.services.holigopaymentservice.services.PaymentService;
 import id.holigo.services.holigopaymentservice.web.exceptions.NotFoundException;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentBankTransferMapper;
@@ -70,6 +68,13 @@ public class PaymentController {
     private TransactionService transactionService;
 
     private MessageSource messageSource;
+
+    private PaymentForbiddenRepository paymentForbiddenRepository;
+
+    @Autowired
+    public void setPaymentForbiddenRepository(PaymentForbiddenRepository paymentForbiddenRepository) {
+        this.paymentForbiddenRepository = paymentForbiddenRepository;
+    }
 
     @Autowired
     public void setMessageSource(MessageSource messageSource) {
@@ -154,6 +159,13 @@ public class PaymentController {
 
         if (transactionDto.getUserId().longValue() != userId.longValue()) {
             throw new ForbiddenException(messageSource.getMessage("payment.user_transaction_not_match", null,
+                    LocaleContextHolder.getLocale()));
+        }
+
+        Optional<PaymentForbidden> fetchPaymentForbidden = paymentForbiddenRepository
+                .findByPaymentServiceIdAndProductId(requestPaymentDto.getPaymentServiceId(), transactionDto.getProductId());
+        if (fetchPaymentForbidden.isPresent()) {
+            throw new ForbiddenException(messageSource.getMessage("payment.forbidden_product", null,
                     LocaleContextHolder.getLocale()));
         }
 

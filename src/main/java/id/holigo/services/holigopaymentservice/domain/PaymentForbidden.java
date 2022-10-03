@@ -23,8 +23,7 @@ public class PaymentForbidden {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer id;
 
-    @ManyToOne
-    PaymentService paymentService;
+    private String paymentServiceId;
 
     private Integer productId;
 
