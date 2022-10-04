@@ -33,10 +33,12 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
 
     @Override
     public List<PaymentMethod> getShowPaymentMethod(UUID transactionId) throws JMSException, JsonProcessingException {
-        TransactionDto transactionDto = transactionService.getTransaction(transactionId);
         List<PaymentMethod> paymentMethods = paymentMethodRepository.findAllByIsShow(true);
-        if (transactionDto.getTransactionType().equals("HTD")) {
-            paymentMethods.remove(0);
+        if (transactionId != null) {
+            TransactionDto transactionDto = transactionService.getTransaction(transactionId);
+            if (transactionDto.getTransactionType().equals("HTD")) {
+                paymentMethods.remove(0);
+            }
         }
         return paymentMethods;
     }

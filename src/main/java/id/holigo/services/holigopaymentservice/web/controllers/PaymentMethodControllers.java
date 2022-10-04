@@ -40,7 +40,7 @@ public class PaymentMethodControllers {
     }
 
     @GetMapping("/api/v1/paymentMethods")
-    public ResponseEntity<List<PaymentMethodDto>> index(@RequestParam("transactionId") UUID transactionId) throws JMSException, JsonProcessingException {
+    public ResponseEntity<List<PaymentMethodDto>> index(@RequestParam(value = "transactionId",required = false) UUID transactionId) throws JMSException, JsonProcessingException {
         return new ResponseEntity<>(
                 paymentMethodService.getShowPaymentMethod(transactionId).stream()
                         .map(paymentMethodMapper::paymentMethodToPaymentMethodDto).collect(Collectors.toList()),
