@@ -1,9 +1,11 @@
 package id.holigo.services.holigopaymentservice.config;
 
+import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
@@ -69,11 +71,25 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
         config.withConfiguration().listener(adapter);
     }
 
+    @Bean
     public Action<PaymentStatusEnum, PaymentStatusEvent> paidAction() {
         return context -> {
             Payment payment = paymentRepository
                     .getById(UUID.fromString(context.getMessageHeader(PaymentServiceImpl.PAYMENT_HEADER).toString()));
             transactionService.issuedTransaction(payment.getTransactionId(), payment);
+        };
+    }
+
+    @Bean
+    public Action<PaymentStatusEnum, PaymentStatusEvent> refundPointAndDepositAction() {
+        return stateContext -> {
+            Payment payment = paymentRepository.getById(UUID.fromString(stateContext.getMessageHeader(PaymentServiceImpl.PAYMENT_HEADER).toString()));
+            if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
+                // refund point
+            }
+            if (payment.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
+                // refund deposit
+            }
         };
     }
 }
