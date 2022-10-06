@@ -6,12 +6,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 import id.holigo.services.holigopaymentservice.web.model.PaymentVirtualAccountDto;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 public abstract class PaymentVirtualAccountMapperDecorator implements PaymentVirtualAccountMapper {
+
+    private MessageSource messageSource;
 
     private PaymentVirtualAccountMapper paymentVirtualAccountMapper;
 
     private PaymentInstructionMapper paymentInstructionMapper;
+
+    @Autowired
+    public void setMessageSource(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
 
     @Autowired
     public void setPaymentVirtualAccountMapper(PaymentVirtualAccountMapper paymentVirtualAccountMapper) {
@@ -35,16 +44,13 @@ public abstract class PaymentVirtualAccountMapperDecorator implements PaymentVir
         PaymentVirtualAccountDto paymentVirtualAccountDto = paymentVirtualAccountMapper
                 .paymentVirtualAccountToPaymentVirtualAccountDto(paymentVirtualAccount, withPaymentService,
                         withPaymentInstructions);
-
-        if (!withPaymentService) {
-            paymentVirtualAccountDto.setPaymentService(null);
-        }
+        paymentVirtualAccountDto.setName(messageSource.getMessage(paymentVirtualAccount.getPaymentService().getIndexName()
+                , null, LocaleContextHolder.getLocale()));
         if (withPaymentInstructions) {
             paymentVirtualAccountDto.setPaymentInstructions(paymentVirtualAccount.getPaymentService()
                     .getPaymentInstructions().stream()
                     .map(paymentInstructionMapper::paymentInstructionToPaymentInstructionDto)
                     .collect(Collectors.toList()));
-
         }
         return paymentVirtualAccountDto;
     }
