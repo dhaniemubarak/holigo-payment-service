@@ -1,5 +1,6 @@
 package id.holigo.services.common.model;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -19,6 +20,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class PaymentDto implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 60L;
 
     private UUID id;
@@ -42,6 +44,8 @@ public class PaymentDto implements Serializable {
     private Boolean isSplitBill;
 
     private BigDecimal pointAmount;
+
+    private BigDecimal depositAmount;
 
     private BigDecimal remainingAmount;
 

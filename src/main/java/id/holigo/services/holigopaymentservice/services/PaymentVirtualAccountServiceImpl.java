@@ -3,7 +3,6 @@ package id.holigo.services.holigopaymentservice.services;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
@@ -22,16 +21,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Service
 public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountService {
-
     public static final String PAYMENT_VIRTUAL_ACCOUNT_HEADER = "payment_virtual_account_id";
-
-    @Autowired
     private final PaymentVirtualAccountRepository paymentVirtualAccountRepository;
-
-    @Autowired
     private final StateMachineFactory<PaymentStatusEnum, PaymentVirtualAccountEvent> stateMachineFactory;
-
-    @Autowired
     private final PaymentVirtualAccountInterceptor paymentVirtualAccountInterceptor;
 
     @Override
@@ -60,7 +52,7 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
 
     String getAccountNumber(TransactionDto transactionDto, String phoneNumber) {
         String accountNumber = "14045";
-        if (phoneNumber.substring(0, 2) == "62") {
+        if (phoneNumber.substring(0, 2).equals("62")) {
             int length = phoneNumber.length();
             accountNumber += phoneNumber.substring(2, length - 2);
         } else if (phoneNumber.equals("null")) {
@@ -103,7 +95,7 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
         sm.stop();
         sm.getStateMachineAccessor().doWithAllRegions(sma -> {
             sma.addStateMachineInterceptor(paymentVirtualAccountInterceptor);
-            sma.resetStateMachine(new DefaultStateMachineContext<PaymentStatusEnum, PaymentVirtualAccountEvent>(
+            sma.resetStateMachine(new DefaultStateMachineContext<>(
                     paymentVirtualAccount.getStatus(), null, null, null));
         });
         sm.start();

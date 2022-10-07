@@ -77,22 +77,12 @@ public class PaymentBankTransferServiceImpl implements PaymentBankTransferServic
         BigDecimal serviceFeeAmount;
         BigDecimal paymentServiceAmount;
         BigDecimal totalAmount = payment.getPaymentServiceAmount();
-
-//        long uniqueCode = randomNumber();
-//        serviceFeeAmount = BigDecimal.valueOf(uniqueCode);
-//        paymentServiceAmount = totalAmount
-//                .add(serviceFeeAmount).subtract(payment.getPointAmount());
-//        Optional<PaymentBankTransfer> fetchPaymentBankTransfer = paymentBankTransferRepository
-//                .findByPaymentServiceIdAndBillAmountAndStatus(
-//                        payment.getPaymentService().getId(),
-//                        paymentServiceAmount,
-//                        PaymentStatusEnum.WAITING_PAYMENT);
         int uniqueCode;
         while (true) {
             uniqueCode = randomNumber();
             serviceFeeAmount = BigDecimal.valueOf(uniqueCode);
             paymentServiceAmount = totalAmount
-                    .add(serviceFeeAmount).subtract(payment.getPointAmount());
+                    .add(serviceFeeAmount);
             Optional<PaymentBankTransfer> tryFetchPaymentBankTransfer = paymentBankTransferRepository
                     .findByPaymentServiceIdAndBillAmountAndStatus(
                             payment.getPaymentService().getId(),

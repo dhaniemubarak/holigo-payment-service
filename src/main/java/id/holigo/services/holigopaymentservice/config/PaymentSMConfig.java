@@ -10,7 +10,6 @@ import id.holigo.services.common.model.PointDto;
 import id.holigo.services.common.model.TransactionDto;
 import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
 import id.holigo.services.holigopaymentservice.services.point.PointService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.action.Action;
@@ -92,12 +91,13 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
 
     @Bean
     public Action<PaymentStatusEnum, PaymentStatusEvent> refundPointAndDepositAction() {
+        log.info("refundPointAndDepositAction is running ......");
         return stateContext -> {
             TransactionDto transactionDto = null;
             Payment payment = paymentRepository.getById(UUID.fromString(stateContext.getMessageHeader(PaymentServiceImpl.PAYMENT_HEADER).toString()));
             try {
                 if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
-
+                    log.info("Menggunakan point");
                     transactionDto = transactionService.getTransaction(payment.getTransactionId());
                     PointDto point = pointService.credit(PointDto.builder()
                             .creditAmount(payment.getPointAmount().intValue())
@@ -115,7 +115,9 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
                     }
 
                 }
+                log.info("point sudah lewat");
                 if (payment.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
+                    log.info("Menggunakan deposit");
                     if (transactionDto != null) {
                         transactionDto = transactionService.getTransaction(payment.getTransactionId());
                     }
