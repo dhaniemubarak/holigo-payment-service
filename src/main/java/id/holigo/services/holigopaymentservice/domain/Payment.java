@@ -110,6 +110,8 @@ public class Payment {
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID applyCouponId;
 
+    private String note;
+
     @Transient
     private String pin;
 

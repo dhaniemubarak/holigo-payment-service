@@ -4,6 +4,12 @@ import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.UUID;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import id.holigo.services.common.model.DepositDto;
+import id.holigo.services.common.model.PointDto;
+import id.holigo.services.common.model.TransactionDto;
+import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
+import id.holigo.services.holigopaymentservice.services.point.PointService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,17 +31,19 @@ import id.holigo.services.holigopaymentservice.services.transaction.TransactionS
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.jms.JMSException;
+
 @RequiredArgsConstructor
 @Slf4j
 @EnableStateMachineFactory(name = "paymentSMF")
 @Configuration
 public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatusEnum, PaymentStatusEvent> {
 
-    @Autowired
     private final TransactionService transactionService;
-
-    @Autowired
     private final PaymentRepository paymentRepository;
+    private final PointService pointService;
+    private final DepositService depositService;
+
 
     @Override
     public void configure(StateMachineStateConfigurer<PaymentStatusEnum, PaymentStatusEvent> states)
@@ -53,7 +61,9 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
         transitions.withExternal().source(PaymentStatusEnum.WAITING_PAYMENT).target(PaymentStatusEnum.PAID)
                 .event(PaymentStatusEvent.PAYMENT_PAID).action(paidAction())
                 .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT).target(PaymentStatusEnum.PAYMENT_EXPIRED)
-                .event(PaymentStatusEvent.PAYMENT_EXPIRED)
+                .event(PaymentStatusEvent.PAYMENT_EXPIRED).action(refundPointAndDepositAction())
+                .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT).target(PaymentStatusEnum.PAYMENT_CANCELED)
+                .event(PaymentStatusEvent.PAYMENT_CANCEL).action(refundPointAndDepositAction())
                 .and().withExternal().source(PaymentStatusEnum.PAID).target(PaymentStatusEnum.REFUNDED)
                 .event(PaymentStatusEvent.PAYMENT_REFUND);
     }
@@ -83,12 +93,51 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
     @Bean
     public Action<PaymentStatusEnum, PaymentStatusEvent> refundPointAndDepositAction() {
         return stateContext -> {
+            TransactionDto transactionDto = null;
             Payment payment = paymentRepository.getById(UUID.fromString(stateContext.getMessageHeader(PaymentServiceImpl.PAYMENT_HEADER).toString()));
-            if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
-                // refund point
-            }
-            if (payment.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
-                // refund deposit
+            try {
+                if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
+
+                    transactionDto = transactionService.getTransaction(payment.getTransactionId());
+                    PointDto point = pointService.credit(PointDto.builder()
+                            .creditAmount(payment.getPointAmount().intValue())
+                            .paymentId(payment.getId())
+                            .informationIndex("pointStatement.refund")
+                            .invoiceNumber(transactionDto.getInvoiceNumber())
+                            .isValid(false)
+                            .transactionId(transactionDto.getId())
+                            .transactionType(transactionDto.getTransactionType())
+                            .userId(payment.getUserId())
+                            .build());
+                    if (point.getIsValid()) {
+                        payment.setNote("Point refunded");
+                        paymentRepository.save(payment);
+                    }
+
+                }
+                if (payment.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
+                    if (transactionDto != null) {
+                        transactionDto = transactionService.getTransaction(payment.getTransactionId());
+                    }
+                    assert transactionDto != null;
+                    DepositDto deposit = depositService.credit(DepositDto.builder()
+                            .category("REFUND")
+                            .creditAmount(payment.getDepositAmount())
+                            .paymentId(payment.getId())
+                            .informationIndex("depositStatement.refund")
+                            .invoiceNumber(transactionDto.getInvoiceNumber())
+                            .transactionId(transactionDto.getId())
+                            .transactionType(transactionDto.getTransactionType())
+                            .userId(payment.getUserId())
+                            .build());
+                    if (deposit.getIsValid()) {
+                        payment.setNote((payment.getNote().length() > 0) ? payment.getNote() + "#" + "Deposit refunded" : "Deposit refunded");
+                        paymentRepository.save(payment);
+                    }
+                }
+
+            } catch (JMSException | JsonProcessingException e) {
+                throw new RuntimeException(e);
             }
         };
     }

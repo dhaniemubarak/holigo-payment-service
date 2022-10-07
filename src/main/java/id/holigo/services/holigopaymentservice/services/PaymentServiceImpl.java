@@ -319,12 +319,6 @@ public class PaymentServiceImpl implements PaymentService {
         paymentCanceled(payment.getId());
         payment.setDeletedAt(Timestamp.valueOf(LocalDateTime.now()));
         Payment updatedPayment = paymentRepository.save(payment);
-        if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
-            creditPoint(payment.getPointAmount(), payment, transactionDto);
-        }
-        if (payment.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
-            creditDeposit(payment.getDepositAmount(), payment, transactionDto);
-        }
         switch (payment.getDetailType()) {
             case "virtualAccount" -> paymentVirtualAccountService.cancelPayment(UUID.fromString(payment.getDetailId()));
             case "bankTransfer" -> paymentBankTransferService.cancelPayment(UUID.fromString(payment.getDetailId()));
@@ -359,26 +353,6 @@ public class PaymentServiceImpl implements PaymentService {
         return resultPointDto.getDebitAmount();
     }
 
-    private Integer creditPoint(BigDecimal pointAmount, Payment payment, TransactionDto transaction) {
-        PointDto pointDto = PointDto.builder().creditAmount(pointAmount.intValue())
-                .transactionId(payment.getTransactionId()).paymentId(payment.getId())
-                .informationIndex("pointStatement.refund")
-                .transactionType(transaction.getTransactionType())
-                .invoiceNumber(transaction.getInvoiceNumber())
-                .userId(transaction.getUserId())
-                .build();
-        PointDto resultPointDto;
-        try {
-            resultPointDto = pointService.credit(pointDto);
-        } catch (JMSException | JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-        if (!resultPointDto.getIsValid()) {
-            return 0;
-        }
-        return resultPointDto.getDebitAmount();
-    }
-
     private BigDecimal debitDeposit(BigDecimal debitAmount, Payment payment, TransactionDto transactionDto) {
         DepositDto depositDto = DepositDto.builder()
                 .category("PAYMENT")
@@ -393,30 +367,6 @@ public class PaymentServiceImpl implements PaymentService {
         DepositDto resultDepositDto;
         try {
             resultDepositDto = depositService.debit(depositDto);
-        } catch (JMSException | JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-        if (!resultDepositDto.getIsValid()) {
-            return BigDecimal.ZERO;
-        }
-
-        return resultDepositDto.getDebitAmount();
-    }
-
-    private BigDecimal creditDeposit(BigDecimal creditAmount, Payment payment, TransactionDto transactionDto) {
-        DepositDto depositDto = DepositDto.builder()
-                .category("PAYMENT")
-                .creditAmount(creditAmount)
-                .paymentId(payment.getId())
-                .informationIndex("depositStatement.refund")
-                .invoiceNumber(transactionDto.getInvoiceNumber())
-                .transactionId(transactionDto.getId())
-                .transactionType(transactionDto.getTransactionType())
-                .userId(transactionDto.getUserId())
-                .build();
-        DepositDto resultDepositDto;
-        try {
-            resultDepositDto = depositService.credit(depositDto);
         } catch (JMSException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }
