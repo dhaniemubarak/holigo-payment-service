@@ -51,7 +51,7 @@ public class KafkaPaymentListener {
                     if (payment.getStatus() != PaymentStatusEnum.PAID) {
                         try {
                             TransactionDto transactionDto = transactionService.getTransaction(payment.getTransactionId());
-                            paymentService.cancelPayment(payment, transactionDto);
+                            paymentService.paymentCanceled(payment.getId());
                         } catch (JsonProcessingException | JMSException e) {
                             throw new RuntimeException(e);
                         }

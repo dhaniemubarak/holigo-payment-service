@@ -61,6 +61,8 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
                 .event(PaymentStatusEvent.PAYMENT_PAID).action(paidAction())
                 .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT).target(PaymentStatusEnum.PAYMENT_EXPIRED)
                 .event(PaymentStatusEvent.PAYMENT_EXPIRED).action(refundPointAndDepositAction())
+                .and().withExternal().source(PaymentStatusEnum.SELECTING_PAYMENT).target(PaymentStatusEnum.PAYMENT_CANCELED)
+                .event(PaymentStatusEvent.PAYMENT_CANCEL).action(refundPointAndDepositAction())
                 .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT).target(PaymentStatusEnum.PAYMENT_CANCELED)
                 .event(PaymentStatusEvent.PAYMENT_CANCEL).action(refundPointAndDepositAction())
                 .and().withExternal().source(PaymentStatusEnum.PAID).target(PaymentStatusEnum.REFUNDED)
