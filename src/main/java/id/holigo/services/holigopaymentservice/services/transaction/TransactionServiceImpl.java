@@ -32,7 +32,6 @@ public class TransactionServiceImpl implements TransactionService {
             try {
                 message = session.createTextMessage(objectMapper.writeValueAsString(transactionDto));
             } catch (JsonProcessingException e) {
-                log.error("Error : " + e.getMessage());
                 throw new JMSException(e.getMessage());
             }
             message.setStringProperty("_type", "id.holigo.services.common.model.TransactionDto");
@@ -56,10 +55,12 @@ public class TransactionServiceImpl implements TransactionService {
             transactionDto = TransactionDto.builder().id(id).paymentStatus(payment.getStatus())
                     .paymentId(payment.getId()).pointAmount(payment.getPointAmount())
                     .paymentServiceId(payment.getPaymentService().getId())
+                    .discountAmount(payment.getDiscountAmount())
                     .voucherCode(payment.getCouponCode()).build();
         } else {
             transactionDto = TransactionDto.builder().id(id).paymentStatus(payment.getStatus())
                     .pointAmount(payment.getPointAmount())
+                    .discountAmount(payment.getDiscountAmount())
                     .voucherCode(payment.getCouponCode()).build();
         }
 

@@ -7,6 +7,7 @@ import javax.jms.JMSException;
 import javax.validation.Valid;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import feign.FeignException;
 import id.holigo.services.common.model.AccountBalanceDto;
 import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.common.model.TransactionDto;
@@ -180,9 +181,12 @@ public class PaymentController {
             Payment waitingPayment = paymentRepository.getById(transactionDto.getPaymentId());
             paymentService.cancelPayment(waitingPayment, transactionDto);
         }
-
-        AccountBalanceDto accountBalanceDto = accountBalanceService.getAccountBalance(userId);
-
+        AccountBalanceDto accountBalanceDto = null;
+        try {
+            accountBalanceDto = accountBalanceService.getAccountBalance(userId);
+        } catch (FeignException e) {
+            log.info("Error -> {}", e.getMessage());
+        }
 
         // Cek apakah layanan pembayaran dibuka atau di tutup untuk produk yang mau
         // dibeli
