@@ -211,12 +211,6 @@ public class PaymentController {
             if (requestPaymentDto.getPointAmount().compareTo(BigDecimal.valueOf(accountBalanceDto.getPoint())) > 0) {
                 throw new ForbiddenException("Point tidak cukup");
             }
-            if (requestPaymentDto.getPaymentServiceId().equals("DEPOSIT")) {
-                requestPaymentDto.setDepositAmount(transactionDto.getFareAmount());
-            }
-            log.info("Debit -> {}", requestPaymentDto.getDepositAmount());
-            log.info("Deposit -> {}", accountBalanceDto.getDeposit());
-            log.info("requestPaymentDto.getDepositAmount().compareTo(accountBalanceDto.getDeposit()) -> {}", requestPaymentDto.getDepositAmount().compareTo(accountBalanceDto.getDeposit()));
             if (requestPaymentDto.getDepositAmount().compareTo(accountBalanceDto.getDeposit()) > 0) {
                 throw new ForbiddenException("Saldo tidak cukup");
             }
