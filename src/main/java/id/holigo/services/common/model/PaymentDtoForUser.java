@@ -26,6 +26,8 @@ public class PaymentDtoForUser implements Serializable {
 
     private BigDecimal pointAmount;
 
+    private BigDecimal depositAmount;
+
     private BigDecimal remainingAmount;
 
     private PaymentStatusEnum status;
