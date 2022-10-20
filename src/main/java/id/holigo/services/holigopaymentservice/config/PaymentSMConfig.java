@@ -116,7 +116,7 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
 
                 }
                 if (payment.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
-                    if (transactionDto != null) {
+                    if (transactionDto == null) {
                         transactionDto = transactionService.getTransaction(payment.getTransactionId());
                     }
                     assert transactionDto != null;
