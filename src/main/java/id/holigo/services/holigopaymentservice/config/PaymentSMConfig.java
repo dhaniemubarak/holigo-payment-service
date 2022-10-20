@@ -131,7 +131,7 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
                             .userId(payment.getUserId())
                             .build());
                     if (deposit.getIsValid()) {
-                        payment.setNote((payment.getNote().length() > 0) ? payment.getNote() + "#" + "Deposit refunded" : "Deposit refunded");
+                        payment.setNote((payment.getNote() != null) ? payment.getNote() + "#" + "Deposit refunded" : "Deposit refunded");
                         paymentRepository.save(payment);
                     }
                 }
