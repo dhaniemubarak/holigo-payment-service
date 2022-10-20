@@ -214,10 +214,12 @@ public class PaymentController {
             if (requestPaymentDto.getPaymentServiceId().equals("DEPOSIT")) {
                 requestPaymentDto.setDepositAmount(transactionDto.getFareAmount());
             }
+            log.info("Debit -> {}", requestPaymentDto.getDepositAmount());
+            log.info("Deposit -> {}", accountBalanceDto.getDeposit());
+            log.info("requestPaymentDto.getDepositAmount().compareTo(accountBalanceDto.getDeposit()) -> {}", requestPaymentDto.getDepositAmount().compareTo(accountBalanceDto.getDeposit()));
             if (requestPaymentDto.getDepositAmount().compareTo(accountBalanceDto.getDeposit()) > 0) {
                 throw new ForbiddenException("Saldo tidak cukup");
             }
-            // 10000 14500 = -1
         }
 
         Payment payment = paymentMapper.requestPaymentDtoToPayment(requestPaymentDto);
