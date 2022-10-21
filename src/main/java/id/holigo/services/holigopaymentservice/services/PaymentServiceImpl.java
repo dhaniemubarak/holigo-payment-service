@@ -168,9 +168,7 @@ public class PaymentServiceImpl implements PaymentService {
                 paymentDeposit.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
                 depositAmount = debitDeposit(paymentDeposit.getBillAmount(), payment, transactionDto);
                 if (depositAmount.equals(paymentDeposit.getBillAmount())) {
-                    remainingAmount = BigDecimal.ZERO;
                     paymentDeposit.setStatus(PaymentStatusEnum.PAID);
-                    paymentStatus = PaymentStatusEnum.PAID;
                 } else {
                     throw new ForbiddenException("Gagal menggunakan Holi Cash");
                 }
@@ -187,9 +185,7 @@ public class PaymentServiceImpl implements PaymentService {
                 paymentPoint.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
                 pointAmount = BigDecimal.valueOf(debitPoint(paymentPoint.getBillAmount(), payment, transactionDto)).setScale(2, RoundingMode.UP);
                 if (pointAmount.equals(paymentPoint.getBillAmount())) {
-                    remainingAmount = BigDecimal.ZERO;
                     paymentPoint.setStatus(PaymentStatusEnum.PAID);
-                    paymentStatus = PaymentStatusEnum.PAID;
                 } else {
                     throw new ForbiddenException("Gagal menggunakan point");
                 }
@@ -252,9 +248,9 @@ public class PaymentServiceImpl implements PaymentService {
         // Create payment after get callback from supplier
         Payment savedPayment = paymentRepository.save(payment);
         transactionService.setPaymentInTransaction(payment.getTransactionId(), payment);
-        if (savedPayment.getStatus().equals(PaymentStatusEnum.PAID)) {
-            transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
-        }
+//        if (savedPayment.getStatus().equals(PaymentStatusEnum.PAID)) {
+//            transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
+//        }
         return savedPayment;
     }
 

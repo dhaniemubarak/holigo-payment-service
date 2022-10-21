@@ -11,7 +11,7 @@ import feign.FeignException;
 import id.holigo.services.common.model.AccountBalanceDto;
 import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.common.model.TransactionDto;
-import id.holigo.services.holigopaymentservice.domain.PaymentForbidden;
+import id.holigo.services.holigopaymentservice.domain.*;
 import id.holigo.services.holigopaymentservice.repositories.*;
 import id.holigo.services.holigopaymentservice.services.StatusPaymentService;
 import id.holigo.services.holigopaymentservice.services.accountBalance.AccountBalanceService;
@@ -31,9 +31,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 import id.holigo.services.common.model.PaymentDtoForUser;
-import id.holigo.services.holigopaymentservice.domain.Payment;
-import id.holigo.services.holigopaymentservice.domain.PaymentBankTransfer;
-import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 import id.holigo.services.holigopaymentservice.services.PaymentService;
 import id.holigo.services.holigopaymentservice.web.exceptions.NotFoundException;
 import id.holigo.services.holigopaymentservice.web.mappers.PaymentBankTransferMapper;
@@ -71,6 +68,15 @@ public class PaymentController {
     private MessageSource messageSource;
 
     private PaymentForbiddenRepository paymentForbiddenRepository;
+
+    private PaymentDepositRepository paymentDepositRepository;
+
+    private PaymentPointRepository paymentPointRepository;
+
+    @Autowired
+    public void setPaymentDepositRepository(PaymentDepositRepository paymentDepositRepository) {
+        this.paymentDepositRepository = paymentDepositRepository;
+    }
 
     @Autowired
     public void setPaymentForbiddenRepository(PaymentForbiddenRepository paymentForbiddenRepository) {
@@ -222,9 +228,25 @@ public class PaymentController {
         payment.setUserId(userId);
 
         Payment savedPayment = paymentService.createPayment(payment, transactionDto, accountBalanceDto);
+        switch (savedPayment.getPaymentService().getId()) {
+            case "DEPOSIT" -> {
+                PaymentDeposit paymentDeposit = paymentDepositRepository.getById(UUID.fromString(savedPayment.getDetailId()));
+                if (paymentDeposit.getStatus().equals(PaymentStatusEnum.PAID)) {
+                    transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
+                }
+            }
+            case "POINT" -> {
+                PaymentPoint paymentPoint = paymentPointRepository.getById(UUID.fromString(savedPayment.getDetailId()));
+                if (paymentPoint.getStatus().equals(PaymentStatusEnum.PAID)) {
+                    transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
+                }
+            }
+        }
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setLocation(
-                UriComponentsBuilder.fromPath("/api/v1/payments/{id}").buildAndExpand(savedPayment.getId()).toUri());
+                UriComponentsBuilder.fromPath("/api/v1/payments/{id}").
+                        buildAndExpand(savedPayment.getId()).
+                        toUri());
         return new ResponseEntity<>(httpHeaders, HttpStatus.CREATED);
     }
 
