@@ -5,6 +5,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import id.holigo.services.common.model.TransactionDto;
+import id.holigo.services.holigopaymentservice.domain.PaymentMethod;
+import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +32,13 @@ public class PaymentMethodControllers {
 
     private PaymentMethodMapper paymentMethodMapper;
 
+    private TransactionService transactionService;
+
+    @Autowired
+    public void setTransactionService(TransactionService transactionService) {
+        this.transactionService = transactionService;
+    }
+
     @Autowired
     public void setPaymentMethodMapper(PaymentMethodMapper paymentMethodMapper) {
         this.paymentMethodMapper = paymentMethodMapper;
@@ -40,10 +50,15 @@ public class PaymentMethodControllers {
     }
 
     @GetMapping("/api/v1/paymentMethods")
-    public ResponseEntity<List<PaymentMethodDto>> index(@RequestParam(value = "transactionId",required = false) UUID transactionId) throws JMSException, JsonProcessingException {
+    public ResponseEntity<List<PaymentMethodDto>> index(@RequestParam(value = "transactionId", required = false) UUID transactionId) throws JMSException, JsonProcessingException {
+        TransactionDto transactionDto = null;
+        if (transactionId != null) {
+            transactionDto = transactionService.getTransaction(transactionId);
+        }
+        TransactionDto finalTransactionDto = transactionDto;
         return new ResponseEntity<>(
                 paymentMethodService.getShowPaymentMethod(transactionId).stream()
-                        .map(paymentMethodMapper::paymentMethodToPaymentMethodDto).collect(Collectors.toList()),
+                        .map(paymentMethod -> paymentMethodMapper.paymentMethodToPaymentMethodDto(paymentMethod, finalTransactionDto)).collect(Collectors.toList()),
                 HttpStatus.OK);
     }
 }

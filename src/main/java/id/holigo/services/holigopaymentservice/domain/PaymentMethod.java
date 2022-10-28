@@ -4,22 +4,18 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import id.holigo.services.common.model.PaymentServiceStatusEnum;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -32,7 +28,7 @@ public class PaymentMethod {
 
     private PaymentServiceStatusEnum status;
 
-    private boolean isShow;
+    private Boolean isShow;
 
     @CreationTimestamp
     private Timestamp createdAt;
@@ -41,6 +37,7 @@ public class PaymentMethod {
     private Timestamp updatedAt;
 
     @OneToMany(mappedBy = "paymentMethod")
+    @OrderBy(value = "createdAt asc")
     @JsonManagedReference
     private List<PaymentService> paymentServices = new ArrayList<>();
 

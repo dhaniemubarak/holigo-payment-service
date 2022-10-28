@@ -55,6 +55,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     private PaymentPointRepository paymentPointRepository;
 
+    private PaymentDigitalWalletService paymentDigitalWalletService;
+
+    @Autowired
+    public void setPaymentDigitalWalletService(PaymentDigitalWalletService paymentDigitalWalletService) {
+        this.paymentDigitalWalletService = paymentDigitalWalletService;
+    }
+
     @Autowired
     public void setPaymentPointRepository(PaymentPointRepository paymentPointRepository) {
         this.paymentPointRepository = paymentPointRepository;
@@ -228,6 +235,16 @@ public class PaymentServiceImpl implements PaymentService {
                 serviceFeeAmount = paymentVirtualAccount.getServiceFeeAmount();
                 totalAmount = paymentVirtualAccount.getTotalAmount();
             }
+            case "DANA" -> {
+                PaymentDigitalWallet paymentDigitalWallet = paymentDigitalWalletService
+                        .createPaymentDigitalWallet(transactionDto, payment);
+                detailType = "digitalWallet";
+                detailId = paymentDigitalWallet.getId().toString();
+                paymentServiceAmount = paymentDigitalWallet.getBillAmount();
+                remainingAmount = paymentDigitalWallet.getBillAmount();
+                serviceFeeAmount = paymentDigitalWallet.getServiceFeeAmount();
+                totalAmount = paymentDigitalWallet.getTotalAmount();
+            }
             case "CC_ALL" -> detailType = "creditCard";
             default -> detailType = "undefined";
         }
@@ -248,9 +265,6 @@ public class PaymentServiceImpl implements PaymentService {
         // Create payment after get callback from supplier
         Payment savedPayment = paymentRepository.save(payment);
         transactionService.setPaymentInTransaction(payment.getTransactionId(), payment);
-//        if (savedPayment.getStatus().equals(PaymentStatusEnum.PAID)) {
-//            transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
-//        }
         return savedPayment;
     }
 

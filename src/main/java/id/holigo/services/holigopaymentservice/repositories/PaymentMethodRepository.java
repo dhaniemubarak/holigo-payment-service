@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import id.holigo.services.holigopaymentservice.domain.PaymentMethod;
 
 public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, String> {
-    List<PaymentMethod> findAllByIsShow(boolean isShow);
+    List<PaymentMethod> findAllByIsShowOrderByCreatedAtAsc(boolean isShow);
 }

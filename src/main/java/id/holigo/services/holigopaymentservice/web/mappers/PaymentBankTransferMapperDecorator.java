@@ -61,7 +61,6 @@ public abstract class PaymentBankTransferMapperDecorator implements PaymentBankT
                 .companyBankAccountToCompanyBankAccountDto(companyBankAccount);
         companyBankAccountDto
                 .setPaymentService(paymentServiceToPaymentServiceDto(companyBankAccount.getPaymentService()));
-        ;
         paymentBankTransferDto
                 .setBank(companyBankAccountDto);
         paymentBankTransferDto
@@ -73,7 +72,7 @@ public abstract class PaymentBankTransferMapperDecorator implements PaymentBankT
     }
 
     public PaymentServiceDto paymentServiceToPaymentServiceDto(PaymentService paymentService) {
-        PaymentServiceDto paymentServiceDto = paymentServiceMapper.paymentServiceToPaymentServiceDto(paymentService);
+        PaymentServiceDto paymentServiceDto = paymentServiceMapper.paymentServiceToPaymentServiceDto(paymentService, null);
         paymentServiceDto.setName(
                 messageSource.getMessage(paymentService.getIndexName(), null, LocaleContextHolder.getLocale()));
         return paymentServiceDto;

@@ -1,6 +1,8 @@
 package id.holigo.services.holigopaymentservice.services;
 
 import java.math.BigDecimal;
+import java.time.Year;
+import java.util.Calendar;
 import java.util.UUID;
 
 import org.springframework.messaging.Message;
@@ -50,16 +52,15 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
         return paymentVirtualAccountRepository.save(paymentVirtualAccount);
     }
 
-    String getAccountNumber(TransactionDto transactionDto, String phoneNumber) {
+    static String getAccountNumber(TransactionDto transactionDto, String phoneNumber) {
         String accountNumber = "14045";
-        if (phoneNumber.substring(0, 2).equals("62")) {
-            int length = phoneNumber.length();
-            accountNumber += phoneNumber.substring(2, length - 2);
+        if (phoneNumber.startsWith("62")) {
+            accountNumber += "0" + phoneNumber.substring(2);
         } else if (phoneNumber.equals("null")) {
             accountNumber += transactionDto.getInvoiceNumber().replaceAll("/", "");
+            accountNumber = accountNumber.replace("" + Year.now().getValue(), "");
         } else {
             accountNumber += phoneNumber;
-
         }
 
         return accountNumber;

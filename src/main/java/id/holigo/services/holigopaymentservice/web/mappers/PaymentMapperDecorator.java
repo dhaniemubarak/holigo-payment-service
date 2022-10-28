@@ -29,7 +29,7 @@ public abstract class PaymentMapperDecorator implements PaymentMapper {
     public PaymentDtoForUser paymentToPaymentDtoForUser(Payment payment) {
         PaymentDtoForUser paymentDtoForUser = paymentMapper.paymentToPaymentDtoForUser(payment);
         paymentDtoForUser
-                .setPaymentService(paymentServiceMapper.paymentServiceToPaymentServiceDto(payment.getPaymentService()));
+                .setPaymentService(paymentServiceMapper.paymentServiceToPaymentServiceDto(payment.getPaymentService(), null));
         return paymentDtoForUser;
     }
 }
