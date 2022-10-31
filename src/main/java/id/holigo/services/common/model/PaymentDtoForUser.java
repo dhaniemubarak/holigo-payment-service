@@ -2,6 +2,7 @@ package id.holigo.services.common.model;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.Data;
@@ -38,4 +39,7 @@ public class PaymentDtoForUser implements Serializable {
 
     private String detailType;
 
+    private Timestamp createdAt;
+
+    private Timestamp updatedAt;
 }
