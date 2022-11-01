@@ -232,13 +232,15 @@ public class PaymentController {
             case "DEPOSIT" -> {
                 PaymentDeposit paymentDeposit = paymentDepositRepository.getById(UUID.fromString(savedPayment.getDetailId()));
                 if (paymentDeposit.getStatus().equals(PaymentStatusEnum.PAID)) {
-                    transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
+                    paymentService.paymentHasBeenPaid(savedPayment.getId());
+//                    transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
                 }
             }
             case "POINT" -> {
                 PaymentPoint paymentPoint = paymentPointRepository.getById(UUID.fromString(savedPayment.getDetailId()));
                 if (paymentPoint.getStatus().equals(PaymentStatusEnum.PAID)) {
-                    transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
+                    paymentService.paymentHasBeenPaid(savedPayment.getId());
+//                    transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
                 }
             }
         }
