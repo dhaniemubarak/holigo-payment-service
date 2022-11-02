@@ -54,6 +54,7 @@ public class PaymentDigitalWallet {
     @Column(columnDefinition = "varchar(25)")
     private String accountNumber;
 
+    @Lob
     private String paymentUrl;
 
     @Enumerated(EnumType.STRING)
