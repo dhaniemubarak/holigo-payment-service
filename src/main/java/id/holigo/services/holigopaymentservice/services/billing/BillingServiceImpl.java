@@ -35,6 +35,8 @@ public class BillingServiceImpl implements BillingService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+        requestBillingDto.setAccountNumber("081227619520");
+        requestBillingDto.setDev(true);
         ResponseEntity<ResponseBillingDto> response = billingServiceFeignClient.checkout(requestBillingDto);
         if (response.getStatusCode().equals(HttpStatus.OK)) {
             return response.getBody();
