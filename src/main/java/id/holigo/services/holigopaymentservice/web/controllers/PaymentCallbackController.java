@@ -38,6 +38,13 @@ public class PaymentCallbackController {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
+    @PostMapping("/api/v1/digitalWalletCallback")
+    public ResponseEntity<?> digitalWallet(@Valid @RequestBody VirtualAccountCallbackDto virtualAccountCallbackDto) {
+        virtualAccountCallbackService.newVirtualAccount(virtualAccountCallbackMapper
+                .virtualAccountCallbackDtoToVirtualAccountCallback(virtualAccountCallbackDto));
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
     @PostMapping("/api/v1/virtualAccountCallback")
     public ResponseEntity<?> virtualAccount(@Valid @RequestBody VirtualAccountCallbackDto virtualAccountCallbackDto) {
         virtualAccountCallbackService.newVirtualAccount(virtualAccountCallbackMapper
