@@ -5,9 +5,7 @@ import java.util.EnumSet;
 import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import id.holigo.services.common.model.DepositDto;
-import id.holigo.services.common.model.PointDto;
-import id.holigo.services.common.model.TransactionDto;
+import id.holigo.services.common.model.*;
 import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
 import id.holigo.services.holigopaymentservice.services.point.PointService;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +20,6 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
 
-import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
@@ -135,7 +132,6 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
                         paymentRepository.save(payment);
                     }
                 }
-
             } catch (JMSException | JsonProcessingException e) {
                 throw new RuntimeException(e);
             }

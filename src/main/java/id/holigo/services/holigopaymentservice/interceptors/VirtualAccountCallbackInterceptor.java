@@ -1,7 +1,8 @@
-package id.holigo.services.holigopaymentservice.services;
+package id.holigo.services.holigopaymentservice.interceptors;
 
 import java.util.Optional;
 
+import id.holigo.services.holigopaymentservice.services.VirtualAccountCallbackServiceImpl;
 import org.springframework.messaging.Message;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.state.State;
@@ -24,19 +25,15 @@ public class VirtualAccountCallbackInterceptor
 
     @Override
     public void preStateChange(State<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> state,
-            Message<VirtualAccountStatusEvent> message,
-            Transition<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> transition,
-            StateMachine<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> stateMachine) {
-        Optional.ofNullable(message).ifPresent(msg -> {
-            Optional.ofNullable(Long.class.cast(
-                    msg.getHeaders().getOrDefault(VirtualAccountCallbackServiceImpl.VIRTUAL_ACCOUNT_CALLBACK_HEADER,
-                            1L)))
-                    .ifPresent(virtualAccountCallbackId -> {
-                        VirtualAccountCallback virtualAccountCallback = virtualAccountCallbackRepository
-                                .getById(virtualAccountCallbackId);
-                        virtualAccountCallback.setProcessStatus(state.getId());
-                        virtualAccountCallbackRepository.save(virtualAccountCallback);
-                    });
+                               Message<VirtualAccountStatusEvent> message,
+                               Transition<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> transition,
+                               StateMachine<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> stateMachine) {
+        Optional.ofNullable(message).flatMap(msg -> Optional.ofNullable((Long) msg.getHeaders().getOrDefault(VirtualAccountCallbackServiceImpl.VIRTUAL_ACCOUNT_CALLBACK_HEADER,
+                1L))).ifPresent(virtualAccountCallbackId -> {
+            VirtualAccountCallback virtualAccountCallback = virtualAccountCallbackRepository
+                    .getById(virtualAccountCallbackId);
+            virtualAccountCallback.setProcessStatus(state.getId());
+            virtualAccountCallbackRepository.save(virtualAccountCallback);
         });
     }
 }

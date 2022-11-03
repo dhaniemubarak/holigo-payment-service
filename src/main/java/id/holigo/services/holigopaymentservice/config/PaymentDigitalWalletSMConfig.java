@@ -1,8 +1,15 @@
 package id.holigo.services.holigopaymentservice.config;
 
-import java.util.EnumSet;
-import java.util.Optional;
-
+import id.holigo.services.common.model.PaymentStatusEnum;
+import id.holigo.services.holigopaymentservice.domain.Payment;
+import id.holigo.services.holigopaymentservice.events.PaymentDigitalWalletEvent;
+import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
+import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
+import id.holigo.services.holigopaymentservice.services.PaymentDigitalWalletServiceImpl;
+import id.holigo.services.holigopaymentservice.interceptors.PaymentInterceptor;
+import id.holigo.services.holigopaymentservice.services.PaymentServiceImpl;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.support.MessageBuilder;
@@ -18,24 +25,15 @@ import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 
-import id.holigo.services.common.model.PaymentStatusEnum;
-import id.holigo.services.holigopaymentservice.domain.Payment;
-import id.holigo.services.holigopaymentservice.events.PaymentBankTransferEvent;
-import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
-import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
-import id.holigo.services.holigopaymentservice.services.PaymentBankTransferServiceImpl;
-import id.holigo.services.holigopaymentservice.interceptors.PaymentInterceptor;
-import id.holigo.services.holigopaymentservice.services.PaymentServiceImpl;
-// import id.holigo.services.holigopaymentservice.services.PaymentService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.EnumSet;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Slf4j
-@EnableStateMachineFactory(name = "paymentBankTransferSMF")
+@EnableStateMachineFactory(name = "paymentDigitalWalletSMF")
 @Configuration
-public class PaymentBankTransferSMConfig
-        extends StateMachineConfigurerAdapter<PaymentStatusEnum, PaymentBankTransferEvent> {
+public class PaymentDigitalWalletSMConfig
+        extends StateMachineConfigurerAdapter<PaymentStatusEnum, PaymentDigitalWalletEvent> {
 
     private PaymentRepository paymentRepository;
 
@@ -54,8 +52,9 @@ public class PaymentBankTransferSMConfig
     }
 
     @Override
-    public void configure(StateMachineStateConfigurer<PaymentStatusEnum, PaymentBankTransferEvent> states)
+    public void configure(StateMachineStateConfigurer<PaymentStatusEnum, PaymentDigitalWalletEvent> states)
             throws Exception {
+
         states.withStates().initial(PaymentStatusEnum.WAITING_PAYMENT)
                 .states(EnumSet.allOf(PaymentStatusEnum.class))
                 .end(PaymentStatusEnum.PAID)
@@ -64,33 +63,34 @@ public class PaymentBankTransferSMConfig
     }
 
     @Override
-    public void configure(StateMachineTransitionConfigurer<PaymentStatusEnum, PaymentBankTransferEvent> transitions)
+    public void configure(StateMachineTransitionConfigurer<PaymentStatusEnum, PaymentDigitalWalletEvent> transitions)
             throws Exception {
-
         transitions.withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
                 .target(PaymentStatusEnum.PAID).action(paymentPaidAction())
-                .event(PaymentBankTransferEvent.PAYMENT_PAID)
+                .event(PaymentDigitalWalletEvent.PAYMENT_PAID)
                 .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
-                .target(PaymentStatusEnum.PAYMENT_CANCELED).event(PaymentBankTransferEvent.PAYMENT_CANCELED);
+                .target(PaymentStatusEnum.PAYMENT_CANCELED).event(PaymentDigitalWalletEvent.PAYMENT_CANCELED);
     }
 
     @Override
-    public void configure(StateMachineConfigurationConfigurer<PaymentStatusEnum, PaymentBankTransferEvent> config)
+    public void configure(StateMachineConfigurationConfigurer<PaymentStatusEnum, PaymentDigitalWalletEvent> config)
             throws Exception {
-        StateMachineListenerAdapter<PaymentStatusEnum, PaymentBankTransferEvent> adapter = new StateMachineListenerAdapter<>() {
+        StateMachineListenerAdapter<PaymentStatusEnum, PaymentDigitalWalletEvent> adapter = new StateMachineListenerAdapter<>() {
             @Override
-            public void stateChanged(State<PaymentStatusEnum, PaymentBankTransferEvent> from,
-                                     State<PaymentStatusEnum, PaymentBankTransferEvent> to) {
+            public void stateChanged(State<PaymentStatusEnum, PaymentDigitalWalletEvent> from,
+                                     State<PaymentStatusEnum, PaymentDigitalWalletEvent> to) {
                 log.info(String.format("stateChange(from: %s, to %s)", from, to));
             }
         };
         config.withConfiguration().listener(adapter);
     }
 
-    public Action<PaymentStatusEnum, PaymentBankTransferEvent> paymentPaidAction() {
+    public Action<PaymentStatusEnum, PaymentDigitalWalletEvent> paymentPaidAction() {
         return context -> {
-            Optional<Payment> fetchPayment = paymentRepository.findByDetailTypeAndDetailId("bankTransfer",
-                    context.getMessageHeader(PaymentBankTransferServiceImpl.PAYMENT_BANK_TRANSFER_HEADER).toString());
+            Optional<Payment> fetchPayment = paymentRepository.findByDetailTypeAndDetailId("digitalWallet",
+                    context.getMessageHeader(
+                                    PaymentDigitalWalletServiceImpl.PAYMENT_DIGITAL_WALLET_HEADER)
+                            .toString());
             if (fetchPayment.isPresent()) {
                 Payment payment = fetchPayment.get();
                 StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(payment);
@@ -99,6 +99,7 @@ public class PaymentBankTransferSMConfig
                         .setHeader(PaymentServiceImpl.PAYMENT_HEADER,
                                 payment.getId().toString())
                         .build());
+
             }
         };
     }

@@ -5,6 +5,9 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import id.holigo.services.common.model.*;
+import id.holigo.services.holigopaymentservice.domain.PaymentDigitalWallet;
+import id.holigo.services.holigopaymentservice.repositories.PaymentDigitalWalletRepository;
+import id.holigo.services.holigopaymentservice.services.DigitalWalletCallbackService;
 import id.holigo.services.holigopaymentservice.services.PaymentService;
 import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
 import id.holigo.services.holigopaymentservice.services.point.PointService;
@@ -38,6 +41,19 @@ public class PaymentListener {
     private DepositService depositService;
     private PointService pointService;
     private PaymentService paymentService;
+    private PaymentDigitalWalletRepository paymentDigitalWalletRepository;
+
+    private DigitalWalletCallbackService digitalWalletCallbackService;
+
+    @Autowired
+    public void setDigitalWalletCallbackService(DigitalWalletCallbackService digitalWalletCallbackService) {
+        this.digitalWalletCallbackService = digitalWalletCallbackService;
+    }
+
+    @Autowired
+    public void setPaymentDigitalWalletRepository(PaymentDigitalWalletRepository paymentDigitalWalletRepository) {
+        this.paymentDigitalWalletRepository = paymentDigitalWalletRepository;
+    }
 
     @Autowired
     public void setPointService(PointService pointService) {
@@ -163,6 +179,16 @@ public class PaymentListener {
                 }
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED_FAILED)) {
                     virtualAccountCallbackService.failedTransaction(paymentVirtualAccount.getCallbackId());
+                }
+            }
+            case "digitalWallet" -> {
+                PaymentDigitalWallet paymentDigitalWallet = paymentDigitalWalletRepository
+                        .getById(UUID.fromString(payment.getDetailId()));
+                if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED)) {
+                    digitalWalletCallbackService.issuedTransaction(paymentDigitalWallet.getCallbackId());
+                }
+                if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED_FAILED)) {
+                    digitalWalletCallbackService.failedTransaction(paymentDigitalWallet.getCallbackId());
                 }
             }
         }

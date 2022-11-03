@@ -13,6 +13,7 @@ import javax.transaction.Transactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import id.holigo.services.common.model.*;
 import id.holigo.services.holigopaymentservice.domain.*;
+import id.holigo.services.holigopaymentservice.interceptors.PaymentInterceptor;
 import id.holigo.services.holigopaymentservice.repositories.PaymentDepositRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentPointRepository;
 import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
@@ -278,25 +279,22 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Transactional
     @Override
-    public StateMachine<PaymentStatusEnum, PaymentStatusEvent> refundPayment(UUID id) {
+    public void refundPayment(UUID id) {
         StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(id);
         sendEvent(id, sm, PaymentStatusEvent.PAYMENT_REFUND);
-        return sm;
     }
 
     @Transactional
     @Override
-    public StateMachine<PaymentStatusEnum, PaymentStatusEvent> paymentExpired(UUID id) {
+    public void paymentExpired(UUID id) {
         StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(id);
         sendEvent(id, sm, PaymentStatusEvent.PAYMENT_EXPIRED);
-        return sm;
     }
 
     @Override
-    public StateMachine<PaymentStatusEnum, PaymentStatusEvent> paymentCanceled(UUID id) {
+    public void paymentCanceled(UUID id) {
         StateMachine<PaymentStatusEnum, PaymentStatusEvent> sm = build(id);
         sendEvent(id, sm, PaymentStatusEvent.PAYMENT_CANCEL);
-        return sm;
     }
 
 

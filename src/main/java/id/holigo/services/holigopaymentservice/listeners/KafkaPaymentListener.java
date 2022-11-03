@@ -7,7 +7,10 @@ import id.holigo.services.common.model.TransactionDto;
 import id.holigo.services.holigopaymentservice.config.KafkaTopicConfig;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
+import id.holigo.services.holigopaymentservice.services.PaymentBankTransferService;
+import id.holigo.services.holigopaymentservice.services.PaymentDigitalWalletService;
 import id.holigo.services.holigopaymentservice.services.PaymentService;
+import id.holigo.services.holigopaymentservice.services.PaymentVirtualAccountService;
 import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.jms.JMSException;
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Component
@@ -29,6 +33,9 @@ public class KafkaPaymentListener {
 
     private final TransactionService transactionService;
     private final PaymentService paymentService;
+    private final PaymentBankTransferService paymentBankTransferService;
+    private final PaymentVirtualAccountService paymentVirtualAccountService;
+    private final PaymentDigitalWalletService paymentDigitalWalletService;
 
     @KafkaListener(topics = KafkaTopicConfig.UPDATE_PAYMENT, groupId = "update-payment", containerFactory = "paymentListenerContainerFactory")
     void listen(PaymentDto paymentDto) {
@@ -49,12 +56,16 @@ public class KafkaPaymentListener {
                 List<Payment> payments = paymentRepository.findAllByTransactionId(paymentDto.getTransactionId());
                 payments.forEach(payment -> {
                     if (payment.getStatus() != PaymentStatusEnum.PAID) {
-                        try {
-                            TransactionDto transactionDto = transactionService.getTransaction(payment.getTransactionId());
-                            paymentService.paymentCanceled(payment.getId());
-                        } catch (JsonProcessingException | JMSException e) {
-                            throw new RuntimeException(e);
+                        paymentService.paymentCanceled(payment.getId());
+                        switch (payment.getDetailType()) {
+                            case "bankTransfer" ->
+                                    paymentBankTransferService.cancelPayment(UUID.fromString(payment.getDetailId()));
+                            case "virtualAccount" ->
+                                    paymentVirtualAccountService.cancelPayment(UUID.fromString(payment.getDetailId()));
+                            case "digitalWallet" ->
+                                    paymentDigitalWalletService.cancelPayment(UUID.fromString(payment.getDetailId()));
                         }
+
                     }
                 });
             }

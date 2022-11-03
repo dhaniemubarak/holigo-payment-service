@@ -1,5 +1,6 @@
 package id.holigo.services.holigopaymentservice.services;
 
+import id.holigo.services.holigopaymentservice.interceptors.BankTransferCallbackInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -97,7 +98,7 @@ public class BankTransferCallbackServiceImpl implements BankTransferCallbackServ
         sm.stop();
         sm.getStateMachineAccessor().doWithAllRegions(sma -> {
             sma.addStateMachineInterceptor(bankTransferCallbackInterceptor);
-            sma.resetStateMachine(new DefaultStateMachineContext<PaymentCallbackStatusEnum, BankTransferStatusEvent>(
+            sma.resetStateMachine(new DefaultStateMachineContext<>(
                     bankTransferCallback.getProcessStatus(), null, null, null));
         });
         sm.start();

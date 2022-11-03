@@ -1,8 +1,10 @@
-package id.holigo.services.holigopaymentservice.services;
+package id.holigo.services.holigopaymentservice.interceptors;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import id.holigo.services.holigopaymentservice.services.PaymentBankTransferServiceImpl;
 import org.springframework.messaging.Message;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.state.State;
@@ -25,19 +27,16 @@ public class PaymentBankTransferInterceptor
 
     @Override
     public void preStateChange(State<PaymentStatusEnum, PaymentBankTransferEvent> state,
-            Message<PaymentBankTransferEvent> message,
-            Transition<PaymentStatusEnum, PaymentBankTransferEvent> transition,
-            StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> stateMachine) {
-        Optional.ofNullable(message).ifPresent(msg -> {
-            Optional.ofNullable(
-                    UUID.class.cast(UUID.fromString(msg.getHeaders()
-                            .get(PaymentBankTransferServiceImpl.PAYMENT_BANK_TRANSFER_HEADER).toString())))
-                    .ifPresent(id -> {
-                        PaymentBankTransfer paymentBankTransfer = paymentBankTransferRepository
-                                .getById(id);
-                        paymentBankTransfer.setStatus(state.getId());
-                        paymentBankTransferRepository.save(paymentBankTransfer);
-                    });
+                               Message<PaymentBankTransferEvent> message,
+                               Transition<PaymentStatusEnum, PaymentBankTransferEvent> transition,
+                               StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> stateMachine) {
+        Optional.ofNullable(message).flatMap(msg -> Optional.of(
+                UUID.fromString(Objects.requireNonNull(msg.getHeaders()
+                        .get(PaymentBankTransferServiceImpl.PAYMENT_BANK_TRANSFER_HEADER)).toString()))).ifPresent(id -> {
+            PaymentBankTransfer paymentBankTransfer = paymentBankTransferRepository
+                    .getById(id);
+            paymentBankTransfer.setStatus(state.getId());
+            paymentBankTransferRepository.save(paymentBankTransfer);
         });
     }
 }
