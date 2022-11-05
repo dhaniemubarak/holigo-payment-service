@@ -5,6 +5,7 @@ import id.holigo.services.holigopaymentservice.domain.PaymentDigitalWallet;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,4 +13,5 @@ public interface PaymentDigitalWalletRepository extends JpaRepository<PaymentDig
     Optional<PaymentDigitalWallet> findByAccountNumberAndStatusAndBillAmount(String accountNumber, PaymentStatusEnum paymentStatusEnum, BigDecimal billAmount);
 
     Optional<PaymentDigitalWallet> findByCallbackId(Long id);
+    List<PaymentDigitalWallet> findAllByStatus(PaymentStatusEnum status);
 }

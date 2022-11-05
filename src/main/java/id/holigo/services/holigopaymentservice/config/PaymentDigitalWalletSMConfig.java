@@ -69,7 +69,9 @@ public class PaymentDigitalWalletSMConfig
                 .target(PaymentStatusEnum.PAID).action(paymentPaidAction())
                 .event(PaymentDigitalWalletEvent.PAYMENT_PAID)
                 .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
-                .target(PaymentStatusEnum.PAYMENT_CANCELED).event(PaymentDigitalWalletEvent.PAYMENT_CANCELED);
+                .target(PaymentStatusEnum.PAYMENT_CANCELED).event(PaymentDigitalWalletEvent.PAYMENT_CANCELED)
+                .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
+                .target(PaymentStatusEnum.PAYMENT_EXPIRED).event(PaymentDigitalWalletEvent.PAYMENT_EXPIRED);
     }
 
     @Override

@@ -1,8 +1,9 @@
 package id.holigo.services.holigopaymentservice.services.billing;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import id.holigo.services.holigopaymentservice.web.model.RequestBillingDto;
+import id.holigo.services.holigopaymentservice.web.model.RequestBillingStatusDto;
 import id.holigo.services.holigopaymentservice.web.model.ResponseBillingDto;
+import id.holigo.services.holigopaymentservice.web.model.ResponseBillingStatusDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,15 @@ public class BillingServiceImpl implements BillingService {
     @Override
     public ResponseBillingDto postPayment(RequestBillingDto requestBillingDto) {
         ResponseEntity<ResponseBillingDto> response = billingServiceFeignClient.checkout(requestBillingDto);
+        if (response.getStatusCode().equals(HttpStatus.OK)) {
+            return response.getBody();
+        }
+        return null;
+    }
+
+    @Override
+    public ResponseBillingStatusDto postCheckStatus(RequestBillingStatusDto requestBillingStatusDto) {
+        ResponseEntity<ResponseBillingStatusDto> response = billingServiceFeignClient.status(requestBillingStatusDto);
         if (response.getStatusCode().equals(HttpStatus.OK)) {
             return response.getBody();
         }

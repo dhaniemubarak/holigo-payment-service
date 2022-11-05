@@ -1,17 +1,19 @@
 package id.holigo.services.holigopaymentservice.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.common.model.TransactionDto;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.domain.PaymentDigitalWallet;
-import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 import id.holigo.services.holigopaymentservice.events.PaymentDigitalWalletEvent;
-import id.holigo.services.holigopaymentservice.events.PaymentVirtualAccountEvent;
 import id.holigo.services.holigopaymentservice.interceptors.PaymentDigitalWalletInterceptor;
 import id.holigo.services.holigopaymentservice.repositories.PaymentDigitalWalletRepository;
 import id.holigo.services.holigopaymentservice.services.billing.BillingService;
 import id.holigo.services.holigopaymentservice.web.model.RequestBillingDto;
+import id.holigo.services.holigopaymentservice.web.model.RequestBillingStatusDto;
 import id.holigo.services.holigopaymentservice.web.model.ResponseBillingDto;
+import id.holigo.services.holigopaymentservice.web.model.ResponseBillingStatusDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Service
 public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletService {
+
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     public static final String PAYMENT_DIGITAL_WALLET_HEADER = "payment_digital_wallet_id";
 
@@ -106,10 +115,44 @@ public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletServ
     }
 
     @Override
+    public void checkStatus(PaymentDigitalWallet paymentDigitalWallet) {
+        RequestBillingStatusDto requestBillingStatusDto = RequestBillingStatusDto.builder()
+                .dev(false)
+                .transactionId(paymentDigitalWallet.getInvoiceNumber()).build();
+        try {
+            log.info("request -> {}", objectMapper.writeValueAsString(requestBillingStatusDto));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        ResponseBillingStatusDto responseBillingStatusDto = billingService.postCheckStatus(requestBillingStatusDto);
+        try {
+            log.info("request -> {}", objectMapper.writeValueAsString(responseBillingStatusDto));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        if (responseBillingStatusDto != null) {
+            if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("success") ||
+                    responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("paid")) {
+                paymentHasBeenPaid(paymentDigitalWallet.getId());
+            }
+            if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("expired")) {
+                paymentHasBeenExpired(paymentDigitalWallet.getId());
+            }
+        }
+
+    }
+
+    @Override
     public StateMachine<PaymentStatusEnum, PaymentDigitalWalletEvent> paymentHasBeenPaid(UUID id) {
         StateMachine<PaymentStatusEnum, PaymentDigitalWalletEvent> sm = build(id);
         sendEvent(id, sm, PaymentDigitalWalletEvent.PAYMENT_PAID);
         return sm;
+    }
+
+    @Override
+    public void paymentHasBeenExpired(UUID id) {
+        StateMachine<PaymentStatusEnum, PaymentDigitalWalletEvent> sm = build(id);
+        sendEvent(id, sm, PaymentDigitalWalletEvent.PAYMENT_EXPIRED);
     }
 
     @Override
