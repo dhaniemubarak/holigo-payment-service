@@ -26,4 +26,6 @@ public interface PaymentService {
     void paymentCanceled(UUID id);
 
     void cancelPayment(Payment payment, TransactionDto transactionDto);
+
+    void checkDepositStatus(Payment payment);
 }

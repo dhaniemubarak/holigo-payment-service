@@ -342,6 +342,15 @@ public class PaymentServiceImpl implements PaymentService {
 //        }
     }
 
+    @Transactional
+    @Override
+    public void checkDepositStatus(Payment payment) {
+        PaymentDeposit paymentDeposit = paymentDepositRepository.getById(UUID.fromString(payment.getDetailId()));
+        if (paymentDeposit.getStatus().equals(PaymentStatusEnum.PAID)) {
+            paymentHasBeenPaid(payment.getId());
+        }
+    }
+
     private Integer debitPoint(BigDecimal pointAmount, Payment payment, TransactionDto transaction) {
         PointDto pointDto = PointDto.builder().debitAmount(pointAmount.intValue())
                 .transactionId(payment.getTransactionId()).paymentId(payment.getId())
