@@ -10,10 +10,8 @@ import id.holigo.services.holigopaymentservice.events.PaymentDigitalWalletEvent;
 import id.holigo.services.holigopaymentservice.interceptors.PaymentDigitalWalletInterceptor;
 import id.holigo.services.holigopaymentservice.repositories.PaymentDigitalWalletRepository;
 import id.holigo.services.holigopaymentservice.services.billing.BillingService;
-import id.holigo.services.holigopaymentservice.web.model.RequestBillingDto;
-import id.holigo.services.holigopaymentservice.web.model.RequestBillingStatusDto;
-import id.holigo.services.holigopaymentservice.web.model.ResponseBillingDto;
-import id.holigo.services.holigopaymentservice.web.model.ResponseBillingStatusDto;
+import id.holigo.services.holigopaymentservice.services.logs.LogService;
+import id.holigo.services.holigopaymentservice.web.model.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +49,13 @@ public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletServ
     private BillingService billingService;
 
     private PaymentDigitalWalletRepository paymentDigitalWalletRepository;
+
+    private LogService logService;
+
+    @Autowired
+    public void setLogService(LogService logService) {
+        this.logService = logService;
+    }
 
     @Autowired
     public void setPaymentDigitalWalletInterceptor(PaymentDigitalWalletInterceptor paymentDigitalWalletInterceptor) {
@@ -116,27 +121,32 @@ public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletServ
 
     @Override
     public void checkStatus(PaymentDigitalWallet paymentDigitalWallet) {
+        SupplierLogDto supplierLogDto = SupplierLogDto.builder().build();
         RequestBillingStatusDto requestBillingStatusDto = RequestBillingStatusDto.builder()
                 .dev(false)
                 .transactionId(paymentDigitalWallet.getInvoiceNumber()).build();
-        try {
-            log.info("request -> {}", objectMapper.writeValueAsString(requestBillingStatusDto));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
         ResponseBillingStatusDto responseBillingStatusDto = billingService.postCheckStatus(requestBillingStatusDto);
         try {
-            log.info("request -> {}", objectMapper.writeValueAsString(responseBillingStatusDto));
+            supplierLogDto.setLogRequest(objectMapper.writeValueAsString(requestBillingStatusDto));
+            supplierLogDto.setLogResponse(objectMapper.writeValueAsString(responseBillingStatusDto));
+            supplierLogDto.setSupplier("nicepay");
+            supplierLogDto.setUrl("https://billing.holigo.id/nicepay/status");
+            supplierLogDto.setMessage(responseBillingStatusDto.getError_message());
+            supplierLogDto.setCode("DANA");
+            supplierLogDto.setUserId(paymentDigitalWallet.getUserId());
+            logService.sendSupplierLog(supplierLogDto);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            log.error("Error : {}", e.getMessage());
         }
         if (responseBillingStatusDto != null) {
-            if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("success") ||
-                    responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("paid")) {
-                paymentHasBeenPaid(paymentDigitalWallet.getId());
-            }
-            if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("expired")) {
-                paymentHasBeenExpired(paymentDigitalWallet.getId());
+            if (responseBillingStatusDto.getStatus()) {
+                if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("success") ||
+                        responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("paid")) {
+                    paymentHasBeenPaid(paymentDigitalWallet.getId());
+                }
+                if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("expired")) {
+                    paymentHasBeenExpired(paymentDigitalWallet.getId());
+                }
             }
         }
 
