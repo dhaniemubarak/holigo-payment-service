@@ -38,13 +38,22 @@ public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletServ
     @Override
     public PaymentDigitalWallet createPaymentDigitalWallet(TransactionDto transactionDto, Payment payment) {
         BigDecimal totalAmount = payment.getPaymentServiceAmount();
-        BigDecimal serviceFeeAmount = totalAmount.multiply(new BigDecimal("0.015")).setScale(0, RoundingMode.UP);
+        BigDecimal serviceFeeAmount;
+        if (payment.getPaymentService().getId().equals("DANA")) {
+            serviceFeeAmount = totalAmount.multiply(new BigDecimal("0.015")).setScale(0, RoundingMode.UP);
+        } else {
+            serviceFeeAmount = totalAmount.multiply(new BigDecimal("0.0064")).setScale(0, RoundingMode.UP);
+        }
+
         BigDecimal billAmount = totalAmount.add(serviceFeeAmount).setScale(0, RoundingMode.UP);
         String[] users = transactionDto.getIndexUser().split("\\|");
         String[] products = transactionDto.getIndexProduct().split("\\|");
         String name = users[0];
         String description = products[1] + " " + products[2] + " " + products[3];
         String accountNumber = users[1];
+        if (accountNumber == null || accountNumber.equals("null")) {
+            accountNumber = "081388882386";
+        }
         PaymentDigitalWallet paymentDigitalWallet = new PaymentDigitalWallet();
         paymentDigitalWallet.setUserId(payment.getUserId());
         paymentDigitalWallet.setTotalAmount(totalAmount);
@@ -61,16 +70,17 @@ public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletServ
                 .accountNumber(accountNumber)
                 .amount(billAmount)
                 .dev(false)
-                .paymentMerchant("DANA")
+                .paymentMerchant(payment.getPaymentService().getId().equals("DANA") ? "DANA" : "SHOP")
                 .transactionId(paymentDigitalWallet.getInvoiceNumber())
                 .transactionTime(Timestamp.valueOf(LocalDateTime.now()))
-                .paymentMethod("EWAL")
+                .paymentMethod(payment.getPaymentService().getId().equals("DANA") ? "EWAL" : "QRIS")
                 .transactionDescription(description).build();
         // API to supplier
         ResponseBillingDto responseBillingDto = billingService.postPayment(requestBillingDto);
         if (responseBillingDto != null) {
             if (responseBillingDto.getStatus() && responseBillingDto.getError_code().equals("000")) {
                 paymentDigitalWallet.setPaymentUrl(responseBillingDto.getData().getPaymentUrl());
+                paymentDigitalWallet.setPaymentCode(responseBillingDto.getData().getPaymentCode());
                 paymentDigitalWallet.setReference(responseBillingDto.getData().getTransactionReference());
                 paymentDigitalWalletRepository.save(paymentDigitalWallet);
             } else {

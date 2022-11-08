@@ -235,7 +235,7 @@ public class PaymentServiceImpl implements PaymentService {
                 serviceFeeAmount = paymentVirtualAccount.getServiceFeeAmount();
                 totalAmount = paymentVirtualAccount.getTotalAmount();
             }
-            case "DANA" -> {
+            case "DANA", "QRIS" -> {
                 PaymentDigitalWallet paymentDigitalWallet = paymentDigitalWalletService
                         .createPaymentDigitalWallet(transactionDto, payment);
                 detailType = "digitalWallet";

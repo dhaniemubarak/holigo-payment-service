@@ -56,6 +56,8 @@ public class PaymentDigitalWallet {
 
     private String paymentUrl;
 
+    private String paymentCode;
+
     @Enumerated(EnumType.STRING)
     private PaymentStatusEnum status;
 
