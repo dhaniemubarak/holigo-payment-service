@@ -17,6 +17,7 @@ import id.holigo.services.holigopaymentservice.services.StatusPaymentService;
 import id.holigo.services.holigopaymentservice.services.accountBalance.AccountBalanceService;
 import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
 import id.holigo.services.holigopaymentservice.web.exceptions.ForbiddenException;
+import id.holigo.services.holigopaymentservice.web.mappers.PaymentDigitalWalletMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -72,6 +73,25 @@ public class PaymentController {
     private PaymentDepositRepository paymentDepositRepository;
 
     private PaymentPointRepository paymentPointRepository;
+
+    private PaymentDigitalWalletRepository paymentDigitalWalletRepository;
+
+    private PaymentDigitalWalletMapper paymentDigitalWalletMapper;
+
+    @Autowired
+    public void setPaymentDigitalWalletMapper(PaymentDigitalWalletMapper paymentDigitalWalletMapper) {
+        this.paymentDigitalWalletMapper = paymentDigitalWalletMapper;
+    }
+
+    @Autowired
+    public void setPaymentPointRepository(PaymentPointRepository paymentPointRepository) {
+        this.paymentPointRepository = paymentPointRepository;
+    }
+
+    @Autowired
+    public void setPaymentDigitalWalletRepository(PaymentDigitalWalletRepository paymentDigitalWalletRepository) {
+        this.paymentDigitalWalletRepository = paymentDigitalWalletRepository;
+    }
 
     @Autowired
     public void setPaymentDepositRepository(PaymentDepositRepository paymentDepositRepository) {
@@ -232,13 +252,15 @@ public class PaymentController {
             case "DEPOSIT" -> {
                 PaymentDeposit paymentDeposit = paymentDepositRepository.getById(UUID.fromString(savedPayment.getDetailId()));
                 if (paymentDeposit.getStatus().equals(PaymentStatusEnum.PAID)) {
-                    transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
+                    paymentService.paymentHasBeenPaid(savedPayment.getId());
+//                    transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
                 }
             }
             case "POINT" -> {
                 PaymentPoint paymentPoint = paymentPointRepository.getById(UUID.fromString(savedPayment.getDetailId()));
                 if (paymentPoint.getStatus().equals(PaymentStatusEnum.PAID)) {
-                    transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
+                    paymentService.paymentHasBeenPaid(savedPayment.getId());
+//                    transactionService.issuedTransaction(savedPayment.getTransactionId(), savedPayment);
                 }
             }
         }
@@ -286,6 +308,14 @@ public class PaymentController {
                 response = new ResponseEntity<>(paymentVirtualAccountMapper
                         .paymentVirtualAccountToPaymentVirtualAccountDto(fetchPaymentVirtualAccount.get(), true, true),
                         HttpStatus.OK);
+            }
+            case "digitalWallet" -> {
+                Optional<PaymentDigitalWallet> fetchPaymentDigitalWallet = paymentDigitalWalletRepository.findById(detailId);
+                if (fetchPaymentDigitalWallet.isEmpty()) {
+                    throw new NotFoundException("Detail not found");
+                }
+                response = new ResponseEntity<>(paymentDigitalWalletMapper
+                        .paymentDigitalWalletToPaymentDigitalWalletDto(fetchPaymentDigitalWallet.get()), HttpStatus.OK);
             }
             default -> response = new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }

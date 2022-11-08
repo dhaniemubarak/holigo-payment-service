@@ -34,14 +34,26 @@ import lombok.extern.slf4j.Slf4j;
 public class VirtualAccountCallbackSMConfig
         extends StateMachineConfigurerAdapter<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> {
 
-    @Autowired
     private VirtualAccountCallbackRepository virtualAccountCallbackRepository;
 
-    @Autowired
     private PaymentVirtualAccountRepository paymentVirtualAccountRepository;
 
-    @Autowired
     private PaymentVirtualAccountService paymentVirtualAccountService;
+
+    @Autowired
+    public void setPaymentVirtualAccountRepository(PaymentVirtualAccountRepository paymentVirtualAccountRepository) {
+        this.paymentVirtualAccountRepository = paymentVirtualAccountRepository;
+    }
+
+    @Autowired
+    public void setPaymentVirtualAccountService(PaymentVirtualAccountService paymentVirtualAccountService) {
+        this.paymentVirtualAccountService = paymentVirtualAccountService;
+    }
+
+    @Autowired
+    public void setVirtualAccountCallbackRepository(VirtualAccountCallbackRepository virtualAccountCallbackRepository) {
+        this.virtualAccountCallbackRepository = virtualAccountCallbackRepository;
+    }
 
     @Override
     public void configure(StateMachineStateConfigurer<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> states)
@@ -117,7 +129,6 @@ public class VirtualAccountCallbackSMConfig
                 PaymentVirtualAccount paymentVirtualAccount = fetchPaymentVirtualAccount.get();
                 paymentVirtualAccount.setCallbackId(virtualAccountCallback.getId());
                 paymentVirtualAccountRepository.save(paymentVirtualAccount);
-
             } else {
                 context.getStateMachine()
                         .sendEvent(MessageBuilder.withPayload(

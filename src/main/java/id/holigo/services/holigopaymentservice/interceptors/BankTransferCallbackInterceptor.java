@@ -1,7 +1,8 @@
-package id.holigo.services.holigopaymentservice.services;
+package id.holigo.services.holigopaymentservice.interceptors;
 
 import java.util.Optional;
 
+import id.holigo.services.holigopaymentservice.services.BankTransferCallbackServiceImpl;
 import org.springframework.messaging.Message;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.state.State;
@@ -24,18 +25,14 @@ public class BankTransferCallbackInterceptor
 
     @Override
     public void preStateChange(State<PaymentCallbackStatusEnum, BankTransferStatusEvent> state,
-            Message<BankTransferStatusEvent> message,
-            Transition<PaymentCallbackStatusEnum, BankTransferStatusEvent> transition,
-            StateMachine<PaymentCallbackStatusEnum, BankTransferStatusEvent> stateMachine) {
-        Optional.ofNullable(message).ifPresent(msg -> {
-            Optional.ofNullable(Long.class.cast(
-                    msg.getHeaders().getOrDefault(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER, 1L)))
-                    .ifPresent(bankTransferCallbackId -> {
-                        BankTransferCallback bankTransferCallback = bankTransferCallbackRepository
-                                .getById(bankTransferCallbackId);
-                        bankTransferCallback.setProcessStatus(state.getId());
-                        bankTransferCallbackRepository.save(bankTransferCallback);
-                    });
+                               Message<BankTransferStatusEvent> message,
+                               Transition<PaymentCallbackStatusEnum, BankTransferStatusEvent> transition,
+                               StateMachine<PaymentCallbackStatusEnum, BankTransferStatusEvent> stateMachine) {
+        Optional.ofNullable(message).flatMap(msg -> Optional.ofNullable((Long) msg.getHeaders().getOrDefault(BankTransferCallbackServiceImpl.BANK_TRANSFER_CALLBACK_HEADER, 1L))).ifPresent(bankTransferCallbackId -> {
+            BankTransferCallback bankTransferCallback = bankTransferCallbackRepository
+                    .getById(bankTransferCallbackId);
+            bankTransferCallback.setProcessStatus(state.getId());
+            bankTransferCallbackRepository.save(bankTransferCallback);
         });
     }
 }

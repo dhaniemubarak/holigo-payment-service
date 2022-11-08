@@ -1,8 +1,10 @@
-package id.holigo.services.holigopaymentservice.services;
+package id.holigo.services.holigopaymentservice.interceptors;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import id.holigo.services.holigopaymentservice.services.PaymentVirtualAccountServiceImpl;
 import org.springframework.messaging.Message;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.state.State;
@@ -24,18 +26,15 @@ public class PaymentVirtualAccountInterceptor
 
     @Override
     public void preStateChange(State<PaymentStatusEnum, PaymentVirtualAccountEvent> state,
-            Message<PaymentVirtualAccountEvent> message,
-            Transition<PaymentStatusEnum, PaymentVirtualAccountEvent> transition,
-            StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> stateMachine) {
-        Optional.ofNullable(message).ifPresent(msg -> {
-            Optional.ofNullable(
-                    UUID.class.cast(UUID.fromString(msg.getHeaders()
-                            .get(PaymentVirtualAccountServiceImpl.PAYMENT_VIRTUAL_ACCOUNT_HEADER).toString())))
-                    .ifPresent(id -> {
-                        PaymentVirtualAccount paymentVirtualAccount = paymentVirtualAccountRepository.getById(id);
-                        paymentVirtualAccount.setStatus(state.getId());
-                        paymentVirtualAccountRepository.save(paymentVirtualAccount);
-                    });
+                               Message<PaymentVirtualAccountEvent> message,
+                               Transition<PaymentStatusEnum, PaymentVirtualAccountEvent> transition,
+                               StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> stateMachine) {
+        Optional.ofNullable(message).flatMap(msg -> Optional.of(
+                UUID.fromString(Objects.requireNonNull(msg.getHeaders()
+                        .get(PaymentVirtualAccountServiceImpl.PAYMENT_VIRTUAL_ACCOUNT_HEADER)).toString()))).ifPresent(id -> {
+            PaymentVirtualAccount paymentVirtualAccount = paymentVirtualAccountRepository.getById(id);
+            paymentVirtualAccount.setStatus(state.getId());
+            paymentVirtualAccountRepository.save(paymentVirtualAccount);
         });
     }
 }
