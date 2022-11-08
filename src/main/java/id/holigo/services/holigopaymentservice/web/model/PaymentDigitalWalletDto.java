@@ -47,6 +47,8 @@ public class PaymentDigitalWalletDto implements Serializable {
 
     private String paymentUrl;
 
+    private String paymentCode;
+
     private PaymentStatusEnum status;
 
     private String reference;
