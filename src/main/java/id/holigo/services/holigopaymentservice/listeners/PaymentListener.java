@@ -185,10 +185,16 @@ public class PaymentListener {
                 PaymentDigitalWallet paymentDigitalWallet = paymentDigitalWalletRepository
                         .getById(UUID.fromString(payment.getDetailId()));
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED)) {
-                    digitalWalletCallbackService.issuedTransaction(paymentDigitalWallet.getCallbackId());
+                    if (paymentDigitalWallet.getCallbackId() != null) {
+                        digitalWalletCallbackService.issuedTransaction(paymentDigitalWallet.getCallbackId());
+                    }
+
                 }
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED_FAILED)) {
-                    digitalWalletCallbackService.failedTransaction(paymentDigitalWallet.getCallbackId());
+                    if (paymentDigitalWallet.getCallbackId() != null) {
+                        digitalWalletCallbackService.failedTransaction(paymentDigitalWallet.getCallbackId());
+                    }
+
                 }
             }
         }
