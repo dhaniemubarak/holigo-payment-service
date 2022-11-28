@@ -2,6 +2,7 @@ package id.holigo.services.holigopaymentservice.web.mappers;
 
 import java.util.stream.Collectors;
 
+import id.holigo.services.common.model.PaymentServiceDto;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
@@ -46,6 +47,9 @@ public abstract class PaymentVirtualAccountMapperDecorator implements PaymentVir
                         withPaymentInstructions);
         paymentVirtualAccountDto.setName(messageSource.getMessage(paymentVirtualAccount.getPaymentService().getIndexName()
                 , null, LocaleContextHolder.getLocale()));
+        PaymentServiceDto paymentServiceDto = paymentVirtualAccountDto.getPaymentService();
+        paymentServiceDto.setName(paymentVirtualAccountDto.getName());
+        paymentVirtualAccountDto.setPaymentService(paymentServiceDto);
         if (withPaymentInstructions) {
             paymentVirtualAccountDto.setPaymentInstructions(paymentVirtualAccount.getPaymentService()
                     .getPaymentInstructions().stream()

@@ -70,7 +70,9 @@ public class PaymentVirtualAccountSMConfig
                 .target(PaymentStatusEnum.PAID).action(paymentPaidAction())
                 .event(PaymentVirtualAccountEvent.PAYMENT_PAID)
                 .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
-                .target(PaymentStatusEnum.PAYMENT_CANCELED).event(PaymentVirtualAccountEvent.PAYMENT_CANCELED);
+                .target(PaymentStatusEnum.PAYMENT_CANCELED).event(PaymentVirtualAccountEvent.PAYMENT_CANCELED)
+                .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
+                .target(PaymentStatusEnum.PAYMENT_EXPIRED).event(PaymentVirtualAccountEvent.PAYMENT_EXPIRED);
     }
 
     @Override

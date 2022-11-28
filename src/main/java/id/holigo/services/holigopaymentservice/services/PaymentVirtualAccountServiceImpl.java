@@ -135,6 +135,12 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
         return sm;
     }
 
+    @Override
+    public void paymentHasBeenExpired(UUID id) {
+        StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> sm = build(id);
+        sendEvent(id, sm, PaymentVirtualAccountEvent.PAYMENT_EXPIRED);
+    }
+
     private void sendEvent(UUID id,
                            StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> sm, PaymentVirtualAccountEvent event) {
         Message<PaymentVirtualAccountEvent> message = MessageBuilder.withPayload(event)

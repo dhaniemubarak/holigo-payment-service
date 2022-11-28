@@ -32,14 +32,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Service
 public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletService {
-
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    public void setObjectMapper(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
-
     public static final String PAYMENT_DIGITAL_WALLET_HEADER = "payment_digital_wallet_id";
 
     private PaymentDigitalWalletInterceptor paymentDigitalWalletInterceptor;
@@ -49,14 +41,6 @@ public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletServ
     private BillingService billingService;
 
     private PaymentDigitalWalletRepository paymentDigitalWalletRepository;
-
-    private LogService logService;
-
-    @Autowired
-    public void setLogService(LogService logService) {
-        this.logService = logService;
-    }
-
     @Autowired
     public void setPaymentDigitalWalletInterceptor(PaymentDigitalWalletInterceptor paymentDigitalWalletInterceptor) {
         this.paymentDigitalWalletInterceptor = paymentDigitalWalletInterceptor;
@@ -127,39 +111,6 @@ public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletServ
             }
         }
         return paymentDigitalWallet;
-    }
-
-    @Override
-    public void checkStatus(PaymentDigitalWallet paymentDigitalWallet) {
-        SupplierLogDto supplierLogDto = SupplierLogDto.builder().build();
-        RequestBillingStatusDto requestBillingStatusDto = RequestBillingStatusDto.builder()
-                .dev(false)
-                .transactionId(paymentDigitalWallet.getInvoiceNumber()).build();
-        ResponseBillingStatusDto responseBillingStatusDto = billingService.postCheckStatus(requestBillingStatusDto);
-        try {
-            supplierLogDto.setLogRequest(objectMapper.writeValueAsString(requestBillingStatusDto));
-            supplierLogDto.setLogResponse(objectMapper.writeValueAsString(responseBillingStatusDto));
-            supplierLogDto.setSupplier("nicepay");
-            supplierLogDto.setUrl("https://billing.holigo.id/nicepay/status");
-            supplierLogDto.setMessage(responseBillingStatusDto.getError_message());
-            supplierLogDto.setCode("DANA");
-            supplierLogDto.setUserId(paymentDigitalWallet.getUserId());
-            logService.sendSupplierLog(supplierLogDto);
-        } catch (JsonProcessingException e) {
-            log.error("Error : {}", e.getMessage());
-        }
-        if (responseBillingStatusDto != null) {
-            if (responseBillingStatusDto.getStatus()) {
-                if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("success") ||
-                        responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("paid")) {
-                    paymentHasBeenPaid(paymentDigitalWallet.getId());
-                }
-                if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("expired")) {
-                    paymentHasBeenExpired(paymentDigitalWallet.getId());
-                }
-            }
-        }
-
     }
 
     @Override

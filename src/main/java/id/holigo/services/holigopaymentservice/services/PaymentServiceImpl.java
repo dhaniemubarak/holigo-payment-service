@@ -8,18 +8,24 @@ import java.util.List;
 import java.util.UUID;
 
 import javax.jms.JMSException;
-import javax.transaction.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import id.holigo.services.common.model.*;
 import id.holigo.services.holigopaymentservice.domain.*;
 import id.holigo.services.holigopaymentservice.interceptors.PaymentInterceptor;
 import id.holigo.services.holigopaymentservice.repositories.PaymentDepositRepository;
 import id.holigo.services.holigopaymentservice.repositories.PaymentPointRepository;
+import id.holigo.services.holigopaymentservice.services.billing.BillingService;
 import id.holigo.services.holigopaymentservice.services.coupon.CouponService;
 import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
+import id.holigo.services.holigopaymentservice.services.logs.LogService;
 import id.holigo.services.holigopaymentservice.services.point.PointService;
 import id.holigo.services.holigopaymentservice.web.exceptions.CouponInvalidException;
+import id.holigo.services.holigopaymentservice.web.model.RequestBillingStatusDto;
+import id.holigo.services.holigopaymentservice.web.model.ResponseBillingStatusDto;
+import id.holigo.services.holigopaymentservice.web.model.SupplierLogDto;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -33,9 +39,11 @@ import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
 import id.holigo.services.holigopaymentservice.services.transaction.TransactionService;
 import id.holigo.services.holigopaymentservice.web.exceptions.ForbiddenException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class PaymentServiceImpl implements PaymentService {
 
     public static final String PAYMENT_HEADER = "payment_id";
@@ -57,6 +65,27 @@ public class PaymentServiceImpl implements PaymentService {
     private PaymentPointRepository paymentPointRepository;
 
     private PaymentDigitalWalletService paymentDigitalWalletService;
+
+    private BillingService billingService;
+
+    private LogService logService;
+
+    @Autowired
+    public void setLogService(LogService logService) {
+        this.logService = logService;
+    }
+
+    @Autowired
+    public void setBillingService(BillingService billingService) {
+        this.billingService = billingService;
+    }
+
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Autowired
     public void setPaymentDigitalWalletService(PaymentDigitalWalletService paymentDigitalWalletService) {
@@ -352,6 +381,63 @@ public class PaymentServiceImpl implements PaymentService {
             paymentHasBeenPaid(payment.getId());
         }
     }
+
+    @Override
+    public void checkStatus(PaymentVirtualAccount paymentVirtualAccount) {
+        RequestBillingStatusDto requestBillingStatusDto = RequestBillingStatusDto.builder()
+                .dev(false)
+                .transactionId(paymentVirtualAccount.getInvoiceNumber()).build();
+        ResponseBillingStatusDto responseBillingStatusDto = checkStatusFromBiller(requestBillingStatusDto, paymentVirtualAccount.getUserId(), paymentVirtualAccount.getPaymentService().getId());
+        if (responseBillingStatusDto != null) {
+            if (responseBillingStatusDto.getStatus()) {
+                if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("success") ||
+                        responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("paid")) {
+                    paymentVirtualAccountService.paymentHasBeenPaid(paymentVirtualAccount.getId());
+                }
+                if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("expired")) {
+                    paymentVirtualAccountService.paymentHasBeenExpired(paymentVirtualAccount.getId());
+                }
+            }
+        }
+    }
+
+    @Override
+    public void checkStatus(PaymentDigitalWallet paymentDigitalWallet) {
+        RequestBillingStatusDto requestBillingStatusDto = RequestBillingStatusDto.builder()
+                .dev(false)
+                .transactionId(paymentDigitalWallet.getInvoiceNumber()).build();
+        ResponseBillingStatusDto responseBillingStatusDto = checkStatusFromBiller(requestBillingStatusDto, paymentDigitalWallet.getUserId(), paymentDigitalWallet.getPaymentCode());
+        if (responseBillingStatusDto != null) {
+            if (responseBillingStatusDto.getStatus()) {
+                if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("success") ||
+                        responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("paid")) {
+                    paymentDigitalWalletService.paymentHasBeenPaid(paymentDigitalWallet.getId());
+                }
+                if (responseBillingStatusDto.getData().getTransactionStatus().equalsIgnoreCase("expired")) {
+                    paymentDigitalWalletService.paymentHasBeenExpired(paymentDigitalWallet.getId());
+                }
+            }
+        }
+    }
+
+    private ResponseBillingStatusDto checkStatusFromBiller(RequestBillingStatusDto requestBillingStatusDto, Long userId, String supplierCode) {
+        ResponseBillingStatusDto responseBillingStatusDto = billingService.postCheckStatus(requestBillingStatusDto);
+        try {
+            SupplierLogDto supplierLogDto = SupplierLogDto.builder().build();
+            supplierLogDto.setLogRequest(objectMapper.writeValueAsString(requestBillingStatusDto));
+            supplierLogDto.setLogResponse(objectMapper.writeValueAsString(responseBillingStatusDto));
+            supplierLogDto.setSupplier("nicepay");
+            supplierLogDto.setUrl("https://billing.holigo.id/nicepay/status");
+            supplierLogDto.setMessage(responseBillingStatusDto.getError_message());
+            supplierLogDto.setCode(supplierCode);
+            supplierLogDto.setUserId(userId);
+            logService.sendSupplierLog(supplierLogDto);
+        } catch (JsonProcessingException e) {
+            log.error("Error : {}", e.getMessage());
+        }
+        return responseBillingStatusDto;
+    }
+
 
     private Integer debitPoint(BigDecimal pointAmount, Payment payment, TransactionDto transaction) {
         PointDto pointDto = PointDto.builder().debitAmount(pointAmount.intValue())

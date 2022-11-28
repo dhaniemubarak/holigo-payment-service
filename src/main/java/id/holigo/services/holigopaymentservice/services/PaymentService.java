@@ -8,6 +8,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import id.holigo.services.common.model.AccountBalanceDto;
 import id.holigo.services.common.model.TransactionDto;
+import id.holigo.services.holigopaymentservice.domain.PaymentDigitalWallet;
+import id.holigo.services.holigopaymentservice.domain.PaymentVirtualAccount;
 import org.springframework.statemachine.StateMachine;
 
 import id.holigo.services.common.model.PaymentStatusEnum;
@@ -28,4 +30,8 @@ public interface PaymentService {
     void cancelPayment(Payment payment, TransactionDto transactionDto);
 
     void checkDepositStatus(Payment payment);
+
+    void checkStatus(PaymentVirtualAccount paymentVirtualAccount);
+
+    void checkStatus(PaymentDigitalWallet paymentDigitalWallet);
 }

@@ -17,4 +17,7 @@ public interface PaymentVirtualAccountService {
 
     StateMachine<PaymentStatusEnum, PaymentVirtualAccountEvent> cancelPayment(UUID id);
 
+    void paymentHasBeenExpired(UUID id);
+
+
 }

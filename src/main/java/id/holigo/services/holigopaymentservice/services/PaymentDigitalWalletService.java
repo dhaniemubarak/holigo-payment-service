@@ -13,9 +13,6 @@ import java.util.UUID;
 public interface PaymentDigitalWalletService {
     PaymentDigitalWallet createPaymentDigitalWallet(TransactionDto transactionDto, Payment payment);
 
-    @Transactional
-    void checkStatus(PaymentDigitalWallet paymentDigitalWallet);
-
     StateMachine<PaymentStatusEnum, PaymentDigitalWalletEvent> paymentHasBeenPaid(UUID id);
 
     StateMachine<PaymentStatusEnum, PaymentDigitalWalletEvent> cancelPayment(UUID id);

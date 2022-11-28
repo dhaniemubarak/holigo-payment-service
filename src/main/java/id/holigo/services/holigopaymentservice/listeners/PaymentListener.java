@@ -175,10 +175,14 @@ public class PaymentListener {
                 PaymentVirtualAccount paymentVirtualAccount = paymentVirtualAccountRepository
                         .getById(UUID.fromString(payment.getDetailId()));
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED)) {
-                    virtualAccountCallbackService.issuedTransaction(paymentVirtualAccount.getCallbackId());
+                    if (paymentVirtualAccount.getCallbackId() != null) {
+                        virtualAccountCallbackService.issuedTransaction(paymentVirtualAccount.getCallbackId());
+                    }
                 }
                 if (transactionDto.getOrderStatus().equals(OrderStatusEnum.ISSUED_FAILED)) {
-                    virtualAccountCallbackService.failedTransaction(paymentVirtualAccount.getCallbackId());
+                    if (paymentVirtualAccount.getCallbackId() != null) {
+                        virtualAccountCallbackService.failedTransaction(paymentVirtualAccount.getCallbackId());
+                    }
                 }
             }
             case "digitalWallet" -> {
