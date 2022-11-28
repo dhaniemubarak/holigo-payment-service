@@ -210,7 +210,9 @@ public class PaymentServiceImpl implements PaymentService {
                 serviceFeeAmount = paymentBankTransfer.getServiceFeeAmount();
                 totalAmount = paymentBankTransfer.getTotalAmount();
             }
-            case "VA_BCA", "VA_MANDIRI", "VA_BNI" -> {
+            case "VA_BCA", "VA_MANDIRI", "VA_BNI", "VA_MAYBANK", "VA_PERMATA",
+                    "VA_PERMATA_S", "VA_KEB_HANA", "VA_CIMB", "VA_BRI", "VA_DANAMON",
+                    "VA_BJB", "VA_BNC", "VA_OB" -> {
 
                 /*
                   Jika memilih virtual account, pastikan tagihan virtual account yang aktif

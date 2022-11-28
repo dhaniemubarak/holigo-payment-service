@@ -70,10 +70,12 @@ public class PaymentVirtualAccount {
     @Enumerated(EnumType.STRING)
     private PaymentStatusEnum status;
 
-    @Column(columnDefinition = "varchar(100)", nullable = true)
+    @Column(columnDefinition = "varchar(100)")
     private String reference;
 
     private Long callbackId;
+
+    private String invoiceNumber;
 
     @OneToOne
     private PaymentService paymentService;

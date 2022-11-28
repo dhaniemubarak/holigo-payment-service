@@ -1,10 +1,14 @@
 package id.holigo.services.holigopaymentservice.services;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.time.Year;
-import java.util.Calendar;
 import java.util.UUID;
 
+import id.holigo.services.holigopaymentservice.services.billing.BillingService;
+import id.holigo.services.holigopaymentservice.web.model.RequestBillingDto;
+import id.holigo.services.holigopaymentservice.web.model.ResponseBillingDto;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
@@ -28,6 +32,8 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
     private final StateMachineFactory<PaymentStatusEnum, PaymentVirtualAccountEvent> stateMachineFactory;
     private final PaymentVirtualAccountInterceptor paymentVirtualAccountInterceptor;
 
+    private final BillingService billingService;
+
     @Override
     public PaymentVirtualAccount createNewVirtualAccount(TransactionDto transactionDto, Payment payment) {
         BigDecimal totalAmount = payment.getPaymentServiceAmount();
@@ -37,8 +43,47 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
         String[] products = transactionDto.getIndexProduct().split("\\|");
         String name = users[0];
         String description = products[1] + " " + products[2] + " " + products[3];
-        String accountNumber = getAccountNumber(transactionDto, users[1]);
+        String accountNumber = null;
+        String reference = null;
+        String invoiceNumber = transactionDto.getInvoiceNumber();
 
+        switch (payment.getPaymentService().getId()) {
+            case "VA_BNI", "VA_MAYBANK", "VA_PERMATA", "VA_PERMATA_S", "VA_KEB_HANA",
+                    "VA_CIMB", "VA_BRI", "VA_DANAMON", "VA_BJB", "VA_BNC", "VA_OB" -> {
+                String paymentMerchant = null;
+                switch (payment.getPaymentService().getId()) {
+                    case "VA_BNI" -> paymentMerchant = "BNIN";
+                    case "VA_MAYBANK" -> paymentMerchant = "IBBK";
+                    case "VA_PERMATA" -> paymentMerchant = "BBBA";
+                    case "VA_PERMATA_S" -> paymentMerchant = "BBBB";
+                    case "VA_KEB_HANA" -> paymentMerchant = "HNBN";
+                    case "VA_CIMB" -> paymentMerchant = "BNIA";
+                    case "VA_BRI" -> paymentMerchant = "BRIN";
+                    case "VA_DANAMON" -> paymentMerchant = "BDIN";
+                    case "VA_BJB" -> paymentMerchant = "PDJB";
+                    case "VA_BNC" -> paymentMerchant = "YUDB";
+                    case "VA_OB" -> paymentMerchant = "OTHR";
+                }
+                RequestBillingDto requestBillingDto = RequestBillingDto.builder()
+                        .accountNumber(getAccountNumber(transactionDto, users[1], payment))
+                        .amount(billAmount)
+                        .dev(false)
+                        .paymentMerchant(paymentMerchant)
+                        .transactionId(invoiceNumber)
+                        .transactionTime(Timestamp.valueOf(LocalDateTime.now()))
+                        .paymentMethod("VirtualAccount")
+                        .transactionDescription(description).build();
+                // API to supplier
+                ResponseBillingDto responseBillingDto = billingService.postPayment(requestBillingDto);
+                if (responseBillingDto != null) {
+                    if (responseBillingDto.getStatus() && responseBillingDto.getError_code().equals("000")) {
+                        accountNumber = responseBillingDto.getData().getPaymentCode();
+                        reference = responseBillingDto.getData().getTransactionReference();
+                    }
+                }
+            }
+            default -> accountNumber = getAccountNumber(transactionDto, users[1], payment);
+        }
         PaymentVirtualAccount paymentVirtualAccount = new PaymentVirtualAccount();
         paymentVirtualAccount.setUserId(payment.getUserId());
         paymentVirtualAccount.setTotalAmount(totalAmount);
@@ -49,11 +94,19 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
         paymentVirtualAccount.setAccountNumber(accountNumber);
         paymentVirtualAccount.setStatus(PaymentStatusEnum.WAITING_PAYMENT);
         paymentVirtualAccount.setPaymentService(payment.getPaymentService());
+        paymentVirtualAccount.setInvoiceNumber(invoiceNumber);
+        paymentVirtualAccount.setReference(reference);
         return paymentVirtualAccountRepository.save(paymentVirtualAccount);
     }
 
-    static String getAccountNumber(TransactionDto transactionDto, String phoneNumber) {
-        String accountNumber = "14045";
+    static String getAccountNumber(TransactionDto transactionDto, String phoneNumber, Payment payment) {
+        String accountNumber;
+        switch (payment.getPaymentService().getId()) {
+            case "VA_BCA" -> accountNumber = "14045";
+            case "VA_MANDIRI" -> accountNumber = "70016";
+            default -> accountNumber = "";
+        }
+
         if (phoneNumber.startsWith("62")) {
             accountNumber += "0" + phoneNumber.substring(2);
         } else if (phoneNumber.equals("null")) {
