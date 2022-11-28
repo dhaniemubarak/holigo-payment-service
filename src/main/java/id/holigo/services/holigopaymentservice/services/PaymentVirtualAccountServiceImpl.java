@@ -38,7 +38,7 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
     @Override
     public PaymentVirtualAccount createNewVirtualAccount(TransactionDto transactionDto, Payment payment) {
         BigDecimal totalAmount = payment.getPaymentServiceAmount();
-        BigDecimal serviceFeeAmount = BigDecimal.valueOf(2750.00);
+        BigDecimal serviceFeeAmount = payment.getPaymentService().getServiceFee();
         BigDecimal billAmount = totalAmount.add(serviceFeeAmount);
         String[] users = transactionDto.getIndexUser().split("\\|");
         String[] products = transactionDto.getIndexProduct().split("\\|");
@@ -51,6 +51,7 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
         switch (payment.getPaymentService().getId()) {
             case "VA_BNI", "VA_MAYBANK", "VA_PERMATA", "VA_PERMATA_S", "VA_KEB_HANA",
                     "VA_CIMB", "VA_BRI", "VA_DANAMON", "VA_BJB", "VA_BNC", "VA_OB" -> {
+                serviceFeeAmount = BigDecimal.valueOf(4000.00);
                 String paymentMerchant = null;
                 switch (payment.getPaymentService().getId()) {
                     case "VA_BNI" -> paymentMerchant = "BNIN";
