@@ -2,7 +2,7 @@ package id.holigo.services.holigopaymentservice.services;
 
 import javax.transaction.Transactional;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import id.holigo.services.holigopaymentservice.interceptors.VirtualAccountCallbackInterceptor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
@@ -22,7 +22,6 @@ public class VirtualAccountCallbackServiceImpl implements VirtualAccountCallback
 
     public static final String VIRTUAL_ACCOUNT_CALLBACK_HEADER = "virtual_account_callback_id";
 
-    @Autowired
     private final VirtualAccountCallbackRepository virtualAccountCallbackRepository;
 
     private final StateMachineFactory<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> stateMachineFactory;
@@ -30,21 +29,19 @@ public class VirtualAccountCallbackServiceImpl implements VirtualAccountCallback
     private final VirtualAccountCallbackInterceptor virtualAccountCallbackInterceptor;
 
     @Override
-    public VirtualAccountCallback newVirtualAccount(VirtualAccountCallback virtualAccountCallback) {
+    public void newVirtualAccount(VirtualAccountCallback virtualAccountCallback) {
         virtualAccountCallback.setProcessStatus(PaymentCallbackStatusEnum.RECEIVED);
         VirtualAccountCallback savedVirtualAccountCallback = virtualAccountCallbackRepository
                 .save(virtualAccountCallback);
         findTransaction(savedVirtualAccountCallback.getId());
-        return savedVirtualAccountCallback;
     }
 
     @Transactional
     @Override
-    public StateMachine<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> findTransaction(
+    public void findTransaction(
             Long virtualAccountCallbackId) {
         StateMachine<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> sm = build(virtualAccountCallbackId);
         sendEvent(virtualAccountCallbackId, sm, VirtualAccountStatusEvent.FIND_TRANSACTION);
-        return sm;
     }
 
     @Transactional
@@ -76,11 +73,10 @@ public class VirtualAccountCallbackServiceImpl implements VirtualAccountCallback
 
     @Transactional
     @Override
-    public StateMachine<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> failedTransaction(
+    public void failedTransaction(
             Long virtualAccountCallbackId) {
         StateMachine<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> sm = build(virtualAccountCallbackId);
         sendEvent(virtualAccountCallbackId, sm, VirtualAccountStatusEvent.ISSUED_FAILED);
-        return sm;
     }
 
     private void sendEvent(Long bankTransferCallbackId,
@@ -100,7 +96,7 @@ public class VirtualAccountCallbackServiceImpl implements VirtualAccountCallback
         sm.stop();
         sm.getStateMachineAccessor().doWithAllRegions(sma -> {
             sma.addStateMachineInterceptor(virtualAccountCallbackInterceptor);
-            sma.resetStateMachine(new DefaultStateMachineContext<PaymentCallbackStatusEnum, VirtualAccountStatusEvent>(
+            sma.resetStateMachine(new DefaultStateMachineContext<>(
                     virtualAccountCallback.getProcessStatus(), null, null, null));
         });
         sm.start();

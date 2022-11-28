@@ -2,6 +2,8 @@ package id.holigo.services.holigopaymentservice.web.controllers;
 
 import javax.validation.Valid;
 
+import id.holigo.services.holigopaymentservice.services.DigitalWalletCallbackService;
+import id.holigo.services.holigopaymentservice.web.model.DigitalWalletCallbackDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,15 +23,15 @@ import lombok.RequiredArgsConstructor;
 @RestController
 public class PaymentCallbackController {
 
-    @Autowired
     private final BankTransferCallbackService bankTransferCallbackService;
 
     private final BankTransferCallbackMapper bankTransferCallbackMapper;
 
-    @Autowired
     private final VirtualAccountCallbackService virtualAccountCallbackService;
 
     private final VirtualAccountCallbackMapper virtualAccountCallbackMapper;
+
+    private final DigitalWalletCallbackService digitalWalletCallbackService;
 
     @PostMapping("/api/v1/bankTransferCallback")
     public ResponseEntity<?> bankTransfer(@Valid @RequestBody BankTransferCallbackDto bankTransferCallbackDto) {
@@ -39,9 +41,8 @@ public class PaymentCallbackController {
     }
 
     @PostMapping("/api/v1/digitalWalletCallback")
-    public ResponseEntity<?> digitalWallet(@Valid @RequestBody VirtualAccountCallbackDto virtualAccountCallbackDto) {
-        virtualAccountCallbackService.newVirtualAccount(virtualAccountCallbackMapper
-                .virtualAccountCallbackDtoToVirtualAccountCallback(virtualAccountCallbackDto));
+    public ResponseEntity<?> digitalWallet(@Valid @RequestBody DigitalWalletCallbackDto digitalWalletCallbackDto) {
+        digitalWalletCallbackService.newDigitalWallet(digitalWalletCallbackDto);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 

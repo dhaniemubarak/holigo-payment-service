@@ -7,9 +7,9 @@ import id.holigo.services.holigopaymentservice.domain.VirtualAccountCallback;
 import id.holigo.services.holigopaymentservice.events.VirtualAccountStatusEvent;
 
 public interface VirtualAccountCallbackService {
-    VirtualAccountCallback newVirtualAccount(VirtualAccountCallback virtualAccountCallback);
+    void newVirtualAccount(VirtualAccountCallback virtualAccountCallback);
 
-    StateMachine<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> findTransaction(Long virtualAccountCallbackId);
+    void findTransaction(Long virtualAccountCallbackId);
 
     StateMachine<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> transactionNotFound(
             Long virtualAccountCallbackId);
@@ -19,5 +19,5 @@ public interface VirtualAccountCallbackService {
 
     StateMachine<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> issuedTransaction(Long virtualAccountCallbackId);
 
-    StateMachine<PaymentCallbackStatusEnum, VirtualAccountStatusEvent> failedTransaction(Long virtualAccountCallbackId);
+    void failedTransaction(Long virtualAccountCallbackId);
 }

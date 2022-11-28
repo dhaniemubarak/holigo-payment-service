@@ -23,7 +23,7 @@ import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
 import id.holigo.services.holigopaymentservice.events.PaymentVirtualAccountEvent;
 import id.holigo.services.holigopaymentservice.repositories.PaymentRepository;
-import id.holigo.services.holigopaymentservice.services.PaymentInterceptor;
+import id.holigo.services.holigopaymentservice.interceptors.PaymentInterceptor;
 import id.holigo.services.holigopaymentservice.services.PaymentServiceImpl;
 import id.holigo.services.holigopaymentservice.services.PaymentVirtualAccountServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -36,13 +36,21 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentVirtualAccountSMConfig
         extends StateMachineConfigurerAdapter<PaymentStatusEnum, PaymentVirtualAccountEvent> {
 
-    @Autowired
-    private final PaymentRepository paymentRepository;
+    private PaymentRepository paymentRepository;
+
+    private final StateMachineFactory<PaymentStatusEnum, PaymentStatusEvent> stateMachineFactory;
+
+    private PaymentInterceptor paymentInterceptor;
 
     @Autowired
-    private StateMachineFactory<PaymentStatusEnum, PaymentStatusEvent> stateMachineFactory;
+    public void setPaymentInterceptor(PaymentInterceptor paymentInterceptor) {
+        this.paymentInterceptor = paymentInterceptor;
+    }
 
-    private final PaymentInterceptor paymentInterceptor;
+    @Autowired
+    public void setPaymentRepository(PaymentRepository paymentRepository) {
+        this.paymentRepository = paymentRepository;
+    }
 
     @Override
     public void configure(StateMachineStateConfigurer<PaymentStatusEnum, PaymentVirtualAccountEvent> states)
