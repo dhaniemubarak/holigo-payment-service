@@ -71,7 +71,9 @@ public class PaymentBankTransferSMConfig
                 .target(PaymentStatusEnum.PAID).action(paymentPaidAction())
                 .event(PaymentBankTransferEvent.PAYMENT_PAID)
                 .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
-                .target(PaymentStatusEnum.PAYMENT_CANCELED).event(PaymentBankTransferEvent.PAYMENT_CANCELED);
+                .target(PaymentStatusEnum.PAYMENT_CANCELED).event(PaymentBankTransferEvent.PAYMENT_CANCELED)
+                .and().withExternal().source(PaymentStatusEnum.WAITING_PAYMENT)
+                .target(PaymentStatusEnum.PAYMENT_EXPIRED).event(PaymentBankTransferEvent.PAYMENT_EXPIRED);
     }
 
     @Override

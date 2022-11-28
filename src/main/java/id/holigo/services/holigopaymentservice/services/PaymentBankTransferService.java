@@ -17,4 +17,6 @@ public interface PaymentBankTransferService {
     StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> paymentHasBeenPaid(UUID id);
 
     StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> cancelPayment(UUID id);
+
+    void paymentHasBeenExpired(UUID id);
 }

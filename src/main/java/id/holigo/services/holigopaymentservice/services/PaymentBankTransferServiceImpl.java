@@ -49,6 +49,12 @@ public class PaymentBankTransferServiceImpl implements PaymentBankTransferServic
         return sm;
     }
 
+    @Override
+    public void paymentHasBeenExpired(UUID id) {
+        StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> sm = build(id);
+        sendEvent(id, sm, PaymentBankTransferEvent.PAYMENT_EXPIRED);
+    }
+
     private void sendEvent(UUID id,
                            StateMachine<PaymentStatusEnum, PaymentBankTransferEvent> sm, PaymentBankTransferEvent event) {
         Message<PaymentBankTransferEvent> message = MessageBuilder.withPayload(event)

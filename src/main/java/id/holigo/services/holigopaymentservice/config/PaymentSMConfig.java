@@ -6,6 +6,9 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import id.holigo.services.common.model.*;
+import id.holigo.services.holigopaymentservice.services.PaymentBankTransferService;
+import id.holigo.services.holigopaymentservice.services.PaymentDigitalWalletService;
+import id.holigo.services.holigopaymentservice.services.PaymentVirtualAccountService;
 import id.holigo.services.holigopaymentservice.services.deposit.DepositService;
 import id.holigo.services.holigopaymentservice.services.point.PointService;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +42,12 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
     private final PaymentRepository paymentRepository;
     private final PointService pointService;
     private final DepositService depositService;
+
+    private final PaymentBankTransferService paymentBankTransferService;
+
+    private final PaymentVirtualAccountService paymentVirtualAccountService;
+
+    private final PaymentDigitalWalletService paymentDigitalWalletService;
 
 
     @Override
@@ -93,6 +102,15 @@ public class PaymentSMConfig extends StateMachineConfigurerAdapter<PaymentStatus
         return stateContext -> {
             TransactionDto transactionDto = null;
             Payment payment = paymentRepository.getById(UUID.fromString(stateContext.getMessageHeader(PaymentServiceImpl.PAYMENT_HEADER).toString()));
+            switch (payment.getDetailType()) {
+                case "bankTransfer" ->
+                        paymentBankTransferService.paymentHasBeenExpired(UUID.fromString(payment.getDetailId()));
+                case "virtualAccount" ->
+                        paymentVirtualAccountService.paymentHasBeenExpired(UUID.fromString(payment.getDetailId()));
+                case "digitalWallet" ->
+                        paymentDigitalWalletService.paymentHasBeenExpired(UUID.fromString(payment.getDetailId()));
+
+            }
             try {
                 if (payment.getPointAmount().compareTo(BigDecimal.ZERO) > 0) {
                     transactionDto = transactionService.getTransaction(payment.getTransactionId());
