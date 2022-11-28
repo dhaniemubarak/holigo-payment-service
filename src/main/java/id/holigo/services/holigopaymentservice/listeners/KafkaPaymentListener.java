@@ -43,7 +43,18 @@ public class KafkaPaymentListener {
             @Override
             protected void doInTransactionWithoutResult(@Nullable TransactionStatus status) {
                 List<Payment> payments = paymentRepository.findAllByTransactionIdAndStatus(paymentDto.getTransactionId(), PaymentStatusEnum.WAITING_PAYMENT);
-                payments.forEach(payment -> paymentService.paymentExpired(payment.getId()));
+                payments.forEach(payment -> {
+                    paymentService.paymentExpired(payment.getId());
+                    switch (payment.getDetailType()) {
+                        case "bankTransfer" ->
+                                paymentBankTransferService.paymentHasBeenExpired(UUID.fromString(payment.getDetailId()));
+                        case "virtualAccount" ->
+                                paymentVirtualAccountService.paymentHasBeenExpired(UUID.fromString(payment.getDetailId()));
+                        case "digitalWallet" ->
+                                paymentDigitalWalletService.paymentHasBeenExpired(UUID.fromString(payment.getDetailId()));
+
+                    }
+                });
             }
         });
     }
