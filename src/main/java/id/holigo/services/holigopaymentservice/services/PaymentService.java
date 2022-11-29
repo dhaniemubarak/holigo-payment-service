@@ -15,6 +15,7 @@ import org.springframework.statemachine.StateMachine;
 import id.holigo.services.common.model.PaymentStatusEnum;
 import id.holigo.services.holigopaymentservice.domain.Payment;
 import id.holigo.services.holigopaymentservice.events.PaymentStatusEvent;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface PaymentService {
     Payment createPayment(Payment payment, TransactionDto transactionDto, AccountBalanceDto accountBalanceDto) throws JsonProcessingException, JMSException;
@@ -31,7 +32,9 @@ public interface PaymentService {
 
     void checkDepositStatus(Payment payment);
 
+    @Transactional
     void checkStatus(PaymentVirtualAccount paymentVirtualAccount);
 
+    @Transactional
     void checkStatus(PaymentDigitalWallet paymentDigitalWallet);
 }
