@@ -45,6 +45,9 @@ public abstract class PaymentVirtualAccountMapperDecorator implements PaymentVir
         PaymentVirtualAccountDto paymentVirtualAccountDto = paymentVirtualAccountMapper
                 .paymentVirtualAccountToPaymentVirtualAccountDto(paymentVirtualAccount, withPaymentService,
                         withPaymentInstructions);
+        if (paymentVirtualAccount.getPaymentService().getId().equals("VA_MANDIRI")) {
+            paymentVirtualAccountDto.setAccountNumber("70016" + paymentVirtualAccountDto.getAccountNumber());
+        }
         paymentVirtualAccountDto.setName(messageSource.getMessage(paymentVirtualAccount.getPaymentService().getIndexName()
                 , null, LocaleContextHolder.getLocale()));
         PaymentServiceDto paymentServiceDto = paymentVirtualAccountDto.getPaymentService();

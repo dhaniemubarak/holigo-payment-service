@@ -41,6 +41,7 @@ public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletServ
     private BillingService billingService;
 
     private PaymentDigitalWalletRepository paymentDigitalWalletRepository;
+
     @Autowired
     public void setPaymentDigitalWalletInterceptor(PaymentDigitalWalletInterceptor paymentDigitalWalletInterceptor) {
         this.paymentDigitalWalletInterceptor = paymentDigitalWalletInterceptor;
@@ -70,7 +71,11 @@ public class PaymentDigitalWalletServiceImpl implements PaymentDigitalWalletServ
         String[] users = transactionDto.getIndexUser().split("\\|");
         String[] products = transactionDto.getIndexProduct().split("\\|");
         String name = users[0];
-        String description = products[1] + " " + products[2] + " " + products[3];
+        String description;
+        switch (transactionDto.getTransactionType()) {
+            case "AIR", "TRAIN" -> description = products[1] + " " + products[2];
+            default -> description = products[1] + " " + products[2] + " " + products[3];
+        }
         String accountNumber = users[1];
         if (accountNumber == null || accountNumber.equals("null")) {
             accountNumber = "081388882386";

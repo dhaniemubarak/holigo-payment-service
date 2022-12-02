@@ -43,7 +43,11 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
         String[] users = transactionDto.getIndexUser().split("\\|");
         String[] products = transactionDto.getIndexProduct().split("\\|");
         String name = users[0];
-        String description = products[1] + " " + products[2] + " " + products[3];
+        String description;
+        switch (transactionDto.getTransactionType()) {
+            case "AIR", "TRAIN" -> description = products[1] + " " + products[2];
+            default -> description = products[1] + " " + products[2] + " " + products[3];
+        }
         String accountNumber = null;
         String reference = null;
         String invoiceNumber = transactionDto.getInvoiceNumber();
@@ -100,13 +104,14 @@ public class PaymentVirtualAccountServiceImpl implements PaymentVirtualAccountSe
         paymentVirtualAccount.setReference(reference);
         return paymentVirtualAccountRepository.save(paymentVirtualAccount);
     }
+    // 70016
 
     static String getAccountNumber(TransactionDto transactionDto, String phoneNumber, Payment payment) {
         String accountNumber;
-        switch (payment.getPaymentService().getId()) {
-            case "VA_BCA" -> accountNumber = "14045";
-            case "VA_MANDIRI" -> accountNumber = "70016";
-            default -> accountNumber = "";
+        if ("VA_BCA".equals(payment.getPaymentService().getId())) {
+            accountNumber = "14045";
+        } else {
+            accountNumber = "";
         }
 
         if (phoneNumber.startsWith("62")) {
